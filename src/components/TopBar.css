@@ -1,0 +1,117 @@
+.topbar {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: 16px;
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--border);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.03), transparent);
+}
+
+.brand-block {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.brand-mark {
+  width: 30px;
+  height: 30px;
+  border-radius: 10px;
+  background: linear-gradient(140deg, var(--accent) 0%, #35c9c0 48%, var(--accent-cyan) 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.35),
+    0 6px 18px rgba(var(--accent-rgb), 0.28);
+}
+
+.brand-name {
+  font-family: var(--font-display);
+  font-size: 16px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  line-height: 1.15;
+}
+
+.brand-sub {
+  font-size: 11px;
+  color: var(--text-dim);
+  letter-spacing: 0.01em;
+}
+
+.transport {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+/* Drawn rather than typed, so the transport is not at the mercy of whichever
+   font happens to have the glyph. */
+.glyph-play {
+  width: 11px;
+  height: 12px;
+  background: currentColor;
+  clip-path: polygon(0 0, 100% 50%, 0 100%);
+  margin-left: 2px;
+}
+
+.glyph-pause {
+  display: flex;
+  gap: 4px;
+  height: 12px;
+}
+
+.glyph-pause::before,
+.glyph-pause::after {
+  content: '';
+  width: 3.5px;
+  height: 12px;
+  border-radius: 2px;
+  background: currentColor;
+}
+
+.timecode {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text);
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 7px 16px;
+  min-width: 176px;
+  text-align: center;
+  letter-spacing: 0.02em;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+
+.timecode-sep {
+  color: var(--text-dim);
+  margin: 0 7px;
+  font-weight: 300;
+}
+
+.timecode-total {
+  color: var(--text-muted);
+}
+
+/* A render or upload fills the button as it goes. */
+.btn.is-busy {
+  position: relative;
+  overflow: hidden;
+  font-variant-numeric: tabular-nums;
+}
+
+.btn-progress {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  height: 2px;
+  background: linear-gradient(90deg, var(--accent), var(--accent-cyan));
+  box-shadow: 0 0 10px rgba(var(--accent-rgb), 0.6);
+  transition: width 200ms linear;
+}
+
+.topbar-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}

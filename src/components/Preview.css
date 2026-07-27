@@ -1,0 +1,300 @@
+.preview-panel {
+  min-height: 0;
+}
+
+.preview-status {
+  font-size: 12px;
+  color: var(--text-dim);
+  font-variant-numeric: tabular-nums;
+}
+
+.preview-stage {
+  flex: 1;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  min-height: 0;
+}
+
+.preview-frame {
+  position: relative;
+  /* Text is sized against the frame height, the way the render does it. */
+  container-type: size;
+  width: min(100%, 760px);
+  max-height: 100%;
+  aspect-ratio: 16 / 9;
+  border-radius: 18px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  background: linear-gradient(160deg, #1b2231 0%, #0f131c 55%, #090b11 100%);
+  box-shadow: var(--shadow-lift), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  display: grid;
+  place-items: center;
+}
+
+.preview-glow {
+  position: absolute;
+  inset: -20%;
+  background:
+    radial-gradient(circle at 28% 28%, rgba(var(--accent-rgb), 0.16), transparent 46%),
+    radial-gradient(circle at 72% 62%, rgba(90, 208, 255, 0.14), transparent 42%);
+  opacity: 0.55;
+  pointer-events: none;
+}
+
+.preview-media-wrap {
+  position: relative;
+  z-index: 1;
+  max-width: 100%;
+  max-height: 100%;
+  overflow: hidden;
+  background: #05070b;
+}
+
+/* A clip parked in a corner of the frame, as a meme or a facecam would be. */
+.preview-media-wrap.is-inset {
+  position: absolute;
+  z-index: 2;
+  max-width: none;
+  border-radius: 6px;
+  outline: 2px solid rgba(255, 255, 255, 0.6);
+  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.5);
+}
+
+.preview-media {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: fill;
+}
+
+.preview-text-layer {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  pointer-events: none;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 6cqh 4cqw;
+  text-align: center;
+}
+
+.preview-text {
+  /* The display face stands in for the heavy system font the render uses. */
+  font-family: var(--font-display);
+  line-height: 1.12;
+  overflow-wrap: anywhere;
+}
+
+.preview-text.is-top {
+  margin-bottom: auto;
+}
+
+.preview-text.is-middle {
+  margin: auto 0;
+}
+
+.preview-text.is-bottom {
+  margin-top: auto;
+}
+
+.preview-text.is-meme span {
+  color: #fff;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  /* Stands in for the heavy outline ffmpeg draws. */
+  -webkit-text-stroke: 0.8cqh #000;
+  paint-order: stroke fill;
+}
+
+.preview-text.is-title span,
+.preview-text.is-caption span {
+  color: #fff;
+  font-weight: 600;
+  background: rgba(0, 0, 0, 0.55);
+  padding: 0.22em 0.5em;
+  border-radius: 0.3em;
+  box-decoration-break: clone;
+}
+
+.crop-layer {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  overflow: hidden;
+  cursor: crosshair;
+}
+
+.crop-window {
+  position: absolute;
+  background: transparent;
+  cursor: move;
+  /* The large spread dims everything outside the crop window. */
+  box-shadow:
+    0 0 0 1px var(--accent),
+    0 0 0 9999px rgba(6, 8, 12, 0.6);
+}
+
+.crop-grid {
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(to right, transparent 33.33%, rgba(255, 255, 255, 0.28) 33.33%, rgba(255, 255, 255, 0.28) calc(33.33% + 1px), transparent calc(33.33% + 1px)),
+    linear-gradient(to right, transparent 66.66%, rgba(255, 255, 255, 0.28) 66.66%, rgba(255, 255, 255, 0.28) calc(66.66% + 1px), transparent calc(66.66% + 1px)),
+    linear-gradient(to bottom, transparent 33.33%, rgba(255, 255, 255, 0.28) 33.33%, rgba(255, 255, 255, 0.28) calc(33.33% + 1px), transparent calc(33.33% + 1px)),
+    linear-gradient(to bottom, transparent 66.66%, rgba(255, 255, 255, 0.28) 66.66%, rgba(255, 255, 255, 0.28) calc(66.66% + 1px), transparent calc(66.66% + 1px));
+  pointer-events: none;
+}
+
+.crop-handle {
+  position: absolute;
+  width: 16px;
+  height: 16px;
+  border: 2px solid var(--accent);
+  background: rgba(9, 12, 18, 0.85);
+  border-radius: 3px;
+}
+
+.crop-handle-tl {
+  top: -8px;
+  left: -8px;
+  cursor: nwse-resize;
+}
+
+.crop-handle-tr {
+  top: -8px;
+  right: -8px;
+  cursor: nesw-resize;
+}
+
+.crop-handle-bl {
+  bottom: -8px;
+  left: -8px;
+  cursor: nesw-resize;
+}
+
+.crop-handle-br {
+  bottom: -8px;
+  right: -8px;
+  cursor: nwse-resize;
+}
+
+.crop-bar {
+  position: absolute;
+  z-index: 3;
+  left: 10px;
+  right: 10px;
+  bottom: 10px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: 10px;
+  background: rgba(14, 17, 24, 0.92);
+  border: 1px solid var(--border-strong);
+  box-shadow: 0 10px 26px rgba(0, 0, 0, 0.45);
+}
+
+.crop-readout {
+  font-size: 11px;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+.crop-presets {
+  display: flex;
+  gap: 4px;
+  margin: 0 auto;
+}
+
+.crop-actions {
+  display: flex;
+  gap: 6px;
+}
+
+.preview-content {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
+  padding: 24px;
+  text-align: center;
+}
+
+.preview-label {
+  font-family: var(--font-display);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+
+.preview-title {
+  font-family: var(--font-display);
+  font-size: clamp(16px, 2.2vw, 27px);
+  font-weight: 500;
+  letter-spacing: -0.03em;
+  max-width: 32ch;
+  overflow-wrap: anywhere;
+  background: linear-gradient(180deg, #ffffff, #b8c4dc);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.preview-time {
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.preview-error {
+  position: absolute;
+  z-index: 2;
+  bottom: 10px;
+  left: 10px;
+  right: 10px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: rgba(239, 107, 107, 0.16);
+  border: 1px solid rgba(239, 107, 107, 0.4);
+  color: #ffd7d7;
+  font-size: 12px;
+  text-align: center;
+}
+
+.preview-scrub {
+  padding: 0 16px 14px;
+}
+
+.preview-scrub input[type='range'] {
+  width: 100%;
+  appearance: none;
+  height: 4px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.1);
+  outline: none;
+}
+
+.preview-scrub input[type='range']::-webkit-slider-thumb {
+  appearance: none;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: #fff;
+  border: none;
+  box-shadow: 0 0 0 4px rgba(var(--accent-rgb), 0.25), 0 2px 8px rgba(0, 0, 0, 0.5);
+  transition: box-shadow var(--speed) var(--ease);
+}
+
+.preview-scrub input[type='range']:hover:not(:disabled)::-webkit-slider-thumb {
+  box-shadow: 0 0 0 6px rgba(var(--accent-rgb), 0.28), 0 2px 10px rgba(0, 0, 0, 0.5);
+}
+
+.preview-scrub input[type='range']:disabled {
+  opacity: 0.4;
+}

@@ -1,0 +1,50 @@
+.splitter {
+  position: relative;
+  align-self: stretch;
+  justify-self: stretch;
+  touch-action: none;
+  border-radius: 4px;
+}
+
+.splitter::after {
+  content: '';
+  position: absolute;
+  background: var(--border);
+  border-radius: 999px;
+  transition: background var(--speed) var(--ease), box-shadow var(--speed) var(--ease);
+}
+
+.splitter-vertical {
+  cursor: col-resize;
+}
+
+.splitter-vertical::after {
+  top: 8px;
+  bottom: 8px;
+  left: 50%;
+  width: 2px;
+  transform: translateX(-1px);
+}
+
+.splitter-horizontal {
+  cursor: row-resize;
+}
+
+.splitter-horizontal::after {
+  left: 8px;
+  right: 8px;
+  top: 50%;
+  height: 2px;
+  transform: translateY(-1px);
+}
+
+.splitter:hover::after,
+.splitter:focus-visible::after,
+.splitter.is-active::after {
+  background: linear-gradient(var(--accent), var(--accent-cyan));
+  box-shadow: 0 0 12px rgba(var(--accent-rgb), 0.45);
+}
+
+.splitter:focus-visible {
+  outline: none;
+}

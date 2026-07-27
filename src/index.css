@@ -1,0 +1,143 @@
+:root {
+  /* Deep, slightly blue dark. Panels sit above it as glass. */
+  --bg: #0a0d15;
+  --bg-elevated: #141a27;
+  --bg-panel: #111622;
+  --bg-soft: #1b2231;
+  --border: rgba(255, 255, 255, 0.07);
+  --border-strong: rgba(255, 255, 255, 0.15);
+  --text: #eef1f8;
+  --text-muted: #a4aec3;
+  --text-dim: #717c93;
+
+  --accent-rgb: 74, 227, 168;
+  --accent: rgb(var(--accent-rgb));
+  --accent-dim: rgba(var(--accent-rgb), 0.14);
+  --accent-strong: #2ecf94;
+  /* The second half of every accent gradient, so highlights have depth. */
+  --accent-cyan: #5ad0ff;
+  --on-accent: #04150e;
+  --danger: #ff7b7b;
+
+  --clip-video: #4a86ff;
+  --clip-audio: #b98cff;
+  --playhead: #ff7a52;
+
+  --radius: 14px;
+  --radius-sm: 10px;
+  --radius-xs: 7px;
+
+  --shadow-soft: 0 10px 30px rgba(0, 0, 0, 0.35);
+  --shadow-lift: 0 18px 48px rgba(0, 0, 0, 0.5);
+  --glow-accent: 0 0 24px rgba(var(--accent-rgb), 0.35);
+
+  /* One easing and one duration, so everything moves the same way. */
+  --ease: cubic-bezier(0.22, 1, 0.36, 1);
+  --speed: 180ms;
+
+  --font: 'Manrope', 'Segoe UI Variable Text', 'Segoe UI', system-ui, -apple-system, sans-serif;
+  --font-display: 'Sora', 'Segoe UI Variable Display', 'Segoe UI', system-ui, -apple-system, sans-serif;
+  /* Numbers are the display face with even-width digits, rather than a
+     typewriter mono, so timecodes read as part of the interface. */
+  --font-num: var(--font-display);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  margin: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font);
+  font-size: 14px;
+  font-optical-sizing: auto;
+  letter-spacing: -0.004em;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+/* Anything showing a number: digits keep their column as the value changes. */
+.num,
+.timecode,
+.zoom-readout,
+.status-counts,
+.preview-status,
+.preview-time,
+.crop-readout,
+.clip-duration,
+.ruler-tick,
+.timeline-summary,
+.media-sub,
+.version-badge,
+.release-version {
+  font-family: var(--font-num);
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: 'tnum' 1;
+}
+
+h1,
+h2,
+h3 {
+  font-family: var(--font-display);
+  letter-spacing: -0.02em;
+}
+
+button,
+input,
+textarea {
+  font: inherit;
+  letter-spacing: inherit;
+}
+
+button {
+  cursor: pointer;
+}
+
+button:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+:focus-visible {
+  outline: 2px solid rgba(var(--accent-rgb), 0.7);
+  outline-offset: 2px;
+}
+
+::selection {
+  background: rgba(var(--accent-rgb), 0.28);
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.12);
+  border: 3px solid transparent;
+  background-clip: padding-box;
+  border-radius: 999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.22);
+  background-clip: padding-box;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 1ms !important;
+    transition-duration: 1ms !important;
+  }
+}
