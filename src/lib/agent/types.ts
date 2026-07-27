@@ -37,6 +37,7 @@ export type ToolName =
   | 'find_online_media'
   | 'add_online_media'
   | 'find_reference_video'
+  | 'download_video'
   | 'export_project'
   | 'publish_youtube'
   | 'youtube_status'
@@ -207,6 +208,17 @@ export type ReferenceOptions = {
   count?: number
 }
 
+/**
+ * Pulling a whole YouTube video down as a file. Either the address is known
+ * already, or the search runs first and the top hit is taken.
+ */
+export type DownloadVideoOptions = {
+  url?: unknown
+  query?: unknown
+  /** Which of the videos just listed to take, counting from one. */
+  choice?: number
+}
+
 export type HostBridge = {
   /**
    * The project as it stands after a host tool ran, since importing changes it
@@ -229,6 +241,7 @@ export type HostBridge = {
   findOnlineMedia: (options: OnlineMediaOptions) => Promise<HostReply>
   addOnlineMedia: (options: AddOnlineOptions) => Promise<HostReply>
   findReferenceVideo: (options: ReferenceOptions) => Promise<HostReply>
+  downloadVideo: (options: DownloadVideoOptions) => Promise<HostReply>
   exportProject: (options: ExportOptions) => Promise<HostReply>
   publish: (options: PublishOptions) => Promise<HostReply>
   youtubeStatus: () => Promise<HostReply>

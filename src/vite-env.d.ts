@@ -130,6 +130,12 @@ type BrowseVideo = {
   length?: string
 }
 
+type FetchedVideo =
+  | { path: string; name: string; size: number; title: string; channel: string; duration: number }
+  | { error: string }
+
+type FetchProgress = { phase: 'tool' | 'download' | 'done' | 'failed'; fraction: number; what: string }
+
 declare global {
   interface Window {
     aicut?: {
@@ -173,6 +179,8 @@ declare global {
           url: string,
           name?: string,
         ) => Promise<{ path: string; name: string; size: number } | { error: string }>
+        youtube: (url: string) => Promise<FetchedVideo>
+        onProgress: (listener: (progress: FetchProgress) => void) => () => void
         open: (url: string) => Promise<boolean>
       }
       updates: {

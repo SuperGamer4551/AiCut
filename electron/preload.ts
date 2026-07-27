@@ -68,6 +68,12 @@ export type ReferenceVideo = {
   length?: string
 }
 
+export type FetchedVideo =
+  | { path: string; name: string; size: number; title: string; channel: string; duration: number }
+  | { error: string }
+
+export type FetchProgress = { phase: 'tool' | 'download' | 'done' | 'failed'; fraction: number; what: string }
+
 export type MediaRoot = { name: string; path: string }
 
 export type FolderEntry = {
@@ -192,7 +198,7 @@ const api = {
     ): Promise<{ query: string; kind: WebMediaKind; results: WebMediaResult[] } | { error: string }> =>
       ipcRenderer.invoke('web:media', query, kind, limit),
 
-    /** Videos to watch for reference; these are linked, never downloaded. */
+    /** Videos to watch for reference, as links. */
     videos: (
       query: string,
       limit?: number,
@@ -205,6 +211,16 @@ const api = {
       name?: string,
     ): Promise<{ path: string; name: string; size: number } | { error: string }> =>
       ipcRenderer.invoke('web:download', url, name),
+
+    /** Pulls a whole YouTube video down as a file, picture and sound merged. */
+    youtube: (url: string): Promise<FetchedVideo> => ipcRenderer.invoke('web:youtube', url),
+
+    /** How far along a download is; returns an unsubscribe function. */
+    onProgress: (listener: (progress: FetchProgress) => void): (() => void) => {
+      const handler = (_event: unknown, progress: FetchProgress) => listener(progress)
+      ipcRenderer.on('web:progress', handler)
+      return () => ipcRenderer.removeListener('web:progress', handler)
+    },
 
     /** Hands a link to the system browser. */
     open: (url: string): Promise<boolean> => ipcRenderer.invoke('web:open', url),

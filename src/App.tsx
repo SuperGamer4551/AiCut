@@ -155,6 +155,19 @@ export default function App() {
     return () => window.clearTimeout(id)
   }, [notice])
 
+  // Pulling a video off YouTube can run for a minute, which is far too long to
+  // sit in silence. The toast keeps itself alive while the numbers keep moving.
+  useEffect(() => {
+    const web = window.aicut?.web
+    if (!web?.onProgress) return
+
+    return web.onProgress((progress) => {
+      if (progress.phase === 'done' || progress.phase === 'failed') return
+      const percent = Math.round(progress.fraction * 100)
+      setNotice(progress.phase === 'download' ? `Downloading… ${percent}%` : progress.what)
+    })
+  }, [])
+
   useEffect(() => {
     function onKeyDown(event: KeyboardEvent) {
       if (event.key !== 'Delete' && event.key !== 'Backspace') return

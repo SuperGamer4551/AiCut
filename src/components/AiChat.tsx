@@ -45,8 +45,8 @@ const SUGGESTIONS = [
   'Make this into a YouTube short',
   'Find me a meme about losing',
   'Cut the dead air out of this',
+  'Get me a Fortnite montage from YouTube',
   'Show me examples of good gaming montages',
-  'Generate a 3 second intro that says Highlights',
   'Export this as a 1080p mp4',
 ]
 

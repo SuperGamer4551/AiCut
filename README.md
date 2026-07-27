@@ -134,12 +134,19 @@ The assistant can go and get things, and it does the fetching in the main proces
 - **`find me a meme about losing`** searches the free libraries, downloads the best match into the media panel and tells you where it came from. The same works for the rest: `get some rain footage`, `find a swoosh sound effect`, `download a picture of a golden retriever`. `find me some options for cat gifs` lists them instead so you can pick one, then `add the second one`.
 - **`look up the new fortnite season`** reads around a subject and answers with what it found and the articles to follow, rather than guessing. The model is told to do this before writing a title, a description or a hook about something it is unsure of.
 - **`show me examples of good gaming montages`** hands back real YouTube links. Links in the chat are clickable and open in your own browser.
+- **`get me a fortnite montage from youtube`** downloads the whole video into the media panel to cut up. Pasting a link fetches that one, and `download the second one` takes it from the list it just showed you.
 
-Downloads land in the app's own `downloads` folder, capped at 300 MB each, and only if the file turns out to be video, audio or a picture.
+Downloads land in the app's own `downloads` folder, capped at 300 MB for a plain file and 600 MB for a video off YouTube, and only if the file turns out to be video, audio or a picture.
 
-Sources are limited to ones that publish a licence — [Openverse](https://openverse.org), [Wikimedia Commons](https://commons.wikimedia.org), the [Internet Archive](https://archive.org) and Imgflip's meme templates — and the licence is quoted every time something is added, because a copyright strike on your channel is a worse outcome than a missing meme. None of them need an account or a key. Somebody else's YouTube video is theirs, so it is linked and never downloaded.
+The free libraries — [Openverse](https://openverse.org), [Wikimedia Commons](https://commons.wikimedia.org), the [Internet Archive](https://archive.org) and Imgflip's meme templates — publish a licence, and it is quoted every time something is added. None of them need an account or a key. They are tried first for anything they plausibly hold, and a result whose title matches nothing in your search is thrown away rather than offered, since a library answering a query it cannot satisfy will otherwise hand back whatever was nearest.
+
+Gameplay, montages and anything else from a real channel are not in those libraries, so those come from YouTube instead. That footage is not yours: it is fine to study and cut from, but anything of it left in something you upload can draw a Content ID claim, most often on the music. There is no length that copyright ignores — no ten-second rule, no percentage rule — and the assistant is told never to suggest otherwise.
 
 Anything that mentions your own machine still goes to the disk instead: `find my fortnite clips` searches your folders, and `add the bruh meme at 0:12` uses the file you already keep.
+
+#### The downloader
+
+YouTube has no download API and changes how its player hands out streams every few weeks, so this uses [yt-dlp](https://github.com/yt-dlp/yt-dlp). It is not in the installer: a copy frozen at release time stops working long before the next release ships. Instead it is fetched from the project's own GitHub releases the first time you ask for a video, checked against the published SHA-256, kept in the app's folder, and replaced once it is more than ten days old. A refresh that fails leaves the working copy alone. Merging YouTube's separate video and audio streams uses the same ffmpeg the app already carries for export.
 
 ### What it remembers
 

@@ -30,7 +30,9 @@ import type { MediaItem, TextOverlay, TimelineClip, Track } from '../src/lib/typ
 import type { UpdateState } from './updater'
 import { checkForUpdates, currentUpdateState, installUpdate, startUpdates, stopUpdates } from './updater'
 import type { DownloadReply, ReferenceReply, WebMediaReply, WebSearchReply } from './web'
-import { downloadMedia, findReferenceVideos, findWebMedia, searchWeb } from './web'
+import { downloadFolder, downloadMedia, findReferenceVideos, findWebMedia, searchWeb } from './web'
+import type { FetchedVideo } from './ytdlp'
+import { fetchYoutubeVideo } from './ytdlp'
 import type { WebMediaKind } from '../src/lib/web/sources'
 import { systemFont } from './fonts'
 import type { PublicYoutubeAccount, YoutubeAccount } from './youtube'
@@ -375,6 +377,29 @@ ipcMain.handle(
   (_event, url: string, name?: string): Promise<DownloadReply> =>
     downloadMedia(app.getPath('userData'), url, name),
 )
+
+/**
+ * A whole YouTube video, picture and sound merged into one file. This is the
+ * one download that needs a helper program rather than a plain fetch, so the
+ * first call may spend a moment fetching that helper before anything moves.
+ */
+ipcMain.handle('web:youtube', async (_event, url: string): Promise<FetchedVideo> => {
+  const userData = app.getPath('userData')
+
+  sendProgress('web:progress', { phase: 'tool', fraction: 0, what: 'Getting ready to download…' })
+
+  const fetched = await fetchYoutubeVideo(userData, downloadFolder(userData), url, (fraction) => {
+    sendProgress('web:progress', { phase: 'download', fraction, what: 'Downloading from YouTube…' })
+  })
+
+  sendProgress('web:progress', {
+    phase: 'error' in fetched ? 'failed' : 'done',
+    fraction: 1,
+    what: 'error' in fetched ? fetched.error : fetched.name,
+  })
+
+  return fetched
+})
 
 /** Opens a link in the real browser; the app itself never navigates away. */
 ipcMain.handle('web:open', async (_event, url: string): Promise<boolean> => {

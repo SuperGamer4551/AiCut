@@ -25,7 +25,7 @@ const FREE_MODELS =
   'Open-ended conversation is free: run Ollama or LM Studio on this computer and there is nothing to sign up for and nothing to pay, or paste a free-tier key from Groq, Google AI Studio or OpenRouter into the settings above.'
 
 const CAN_DO =
-  'I can look through your folders and import what I find, search the internet for memes, footage, pictures and sound you are allowed to use and drop them straight into your media, read up on a subject before we talk about it, point you at videos worth watching, cut a recording down to its best moment, make it vertical for a short, drop the dead air, add text and memes, punch in on the action, build a montage, draw title and end cards, then render it or publish it to YouTube.'
+  'I can look through your folders and import what I find, search the internet for memes, footage, pictures and sound you are allowed to use and drop them straight into your media, download a whole video off YouTube for you to cut up, read up on a subject before we talk about it, point you at videos worth watching, cut a recording down to its best moment, make it vertical for a short, drop the dead air, add text and memes, punch in on the action, build a montage, draw title and end cards, then render it or publish it to YouTube.'
 
 function nothingYet(context: ChatContext): string {
   if (context.clips > 0) return `You have ${context.clips === 1 ? 'a clip' : `${context.clips} clips`} on the timeline.`
@@ -187,7 +187,7 @@ const TOPICS: Topic[] = [
     id: 'internet',
     test: /\b(?:internet|online|the web|search the web|google|browse|download|stock footage|b.?roll|copyright|licen[sc]e|royalty.?free|creative commons)\b/,
     answer: () =>
-      'I can go and get things. "Find me a meme about losing" downloads one into your media panel, and the same works for footage, pictures, gifs and sound effects — "get some rain footage", "find a swoosh sound". I only pull from libraries that state a licence, so nothing I hand you should earn a copyright strike, and I tell you the licence each time. "Look up the new Fortnite season" reads around a subject, and "show me examples of good gaming montages" hands back YouTube links to watch. I will not download somebody else\'s YouTube video; that one is theirs.',
+      'I can go and get things. "Find me a meme about losing" downloads one into your media panel, and the same works for footage, pictures, gifs and sound effects — "get some rain footage", "find a swoosh sound". Those come from libraries that state a licence, so they are yours to publish and I tell you the licence each time. Gameplay and montages are not in those libraries, so for those I go to YouTube: "get me a fortnite montage from youtube" downloads the whole video for you to cut up, and "show me examples of good gaming montages" hands back links to watch instead. A video off someone\'s channel is theirs, though — fine to study, but leaving any of it in your own upload risks a Content ID claim, usually on the music, and no clip is short enough to be exempt from that.',
   },
   {
     id: 'memes',

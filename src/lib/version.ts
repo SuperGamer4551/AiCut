@@ -15,6 +15,18 @@ export type Release = {
 
 export const RELEASES: Release[] = [
   {
+    version: '0.10.0',
+    date: '2026-07-27',
+    title: 'It gets videos off YouTube now',
+    changes: [
+      '"Get me a fortnite montage from youtube" downloads the whole video into your media panel, ready to cut up. Paste a link and it fetches that one instead.',
+      'Asking for a video no longer hands you a stranger. The free libraries have no gameplay in them, and rather than offering whatever was nearest, it now says so and goes to YouTube instead.',
+      'It picks the best copy up to 1080p and merges picture and sound into one file. A progress figure shows while it runs.',
+      'It is honest about what you can reuse. Your own recordings and the free libraries are yours to publish; a video off someone\'s channel is not, and it says so without pretending a short enough clip is exempt, because no such length exists.',
+      'The downloader keeps itself current in the background, so it does not stop working every time YouTube changes something.',
+    ],
+  },
+  {
     version: '0.9.0',
     date: '2026-07-26',
     title: 'It can go and look things up',

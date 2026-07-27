@@ -4,7 +4,8 @@
 // Run with: npm run check:web
 import type { MediaItem, Track } from '../src/lib/types'
 import type { ProjectState } from '../src/lib/agent/types'
-import { interpretCommand, onlineKind, webSubject } from '../src/lib/agent/interpret'
+import { interpretCommand, listChoice, onlineKind, webSubject } from '../src/lib/agent/interpret'
+import { isStale, isYoutubeUrl, parseReport, progressFromLine, readFailure } from '../electron/ytdlp'
 import { createHostBridge } from '../src/lib/agent/bridge'
 import { converse } from '../src/lib/agent/converse'
 import { linkLabel, splitLinks } from '../src/lib/links'
@@ -240,16 +241,42 @@ async function main() {
   check('a name with nothing left still gets one', safeFileName('///', 'png'), 'download.png')
   check('a very long name is cut short', safeFileName('x'.repeat(200), 'gif').length <= 74, true)
 
+  const shot = (title: string, url: string, width?: number) => ({
+    title,
+    url,
+    pageUrl: '',
+    source: '',
+    license: '',
+    extension: 'jpg',
+    kind: 'image' as const,
+    ...(width ? { width } : {}),
+  })
+
   const ranked = rankResults(
-    [
-      { title: 'Unrelated thing', url: 'a', pageUrl: '', source: '', license: '', extension: 'jpg', kind: 'image' },
-      { title: 'A rainy window', url: 'b', pageUrl: '', source: '', license: '', extension: 'jpg', kind: 'image', width: 800 },
-      { title: 'Unrelated thing', url: 'a', pageUrl: '', source: '', license: '', extension: 'jpg', kind: 'image' },
-    ],
+    [shot('A window', 'a'), shot('A rainy window', 'b', 800), shot('A window', 'a')],
     'rainy window',
   )
-  check('the result that matches the words comes first', ranked[0].url, 'b')
+  check('the result that matches most of the words comes first', ranked[0].url, 'b')
   check('the same file twice is listed once', ranked.length, 2)
+
+  // What handed over a stranger when the libraries had nothing on the subject.
+  check(
+    'a title matching none of the search is thrown away',
+    rankResults([shot('Bop House tour', 'a'), shot('Cooking at home', 'b')], 'fortnite gaming montage').length,
+    0,
+  )
+  check(
+    'the ones that do match survive that',
+    rankResults([shot('Bop House tour', 'a'), shot('Fortnite build fight', 'b')], 'fortnite gaming montage').map(
+      (result) => result.url,
+    ),
+    ['b'],
+  )
+  check(
+    'a search with no word long enough to judge by keeps everything',
+    rankResults([shot('Bop House tour', 'a')], 'ok').length,
+    1,
+  )
 
   check('a meme is a picture underneath', fileKindFor('meme'), 'image')
   check('a gif is a picture underneath', fileKindFor('gif'), 'image')
@@ -319,6 +346,78 @@ async function main() {
 
   check('the assistant can say it reaches the internet', converse('can you search the internet', { connected: false, clips: 0, media: 0 })?.topic, 'internet')
 
+  // --- Asking for a video that only YouTube has ---------------------------
+
+  check('naming YouTube asks YouTube', route('get me a fortnite montage from youtube'), {
+    name: 'download_video',
+    args: { query: 'fortnite montage' },
+  })
+  check('a pasted link is the whole request', route('https://www.youtube.com/watch?v=dQw4w9WgXcQ'), {
+    name: 'download_video',
+    args: { url: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ' },
+  })
+  check('a short link counts too', route('grab this https://youtu.be/abc123')?.name, 'download_video')
+  check('picking off the last list needs no new search', route('download the second one'), {
+    name: 'download_video',
+    args: { choice: 2 },
+  })
+  check('a numbered pick is read', listChoice('download number 3'), 3)
+  check('nothing to pick from reads as nothing', listChoice('download that video'), null)
+
+  // The reported failure: this used to hand back whatever the archive had.
+  check('a plain video request still starts with the free libraries', route('get me a video about a fortnite gaming montage'), {
+    name: 'add_online_media',
+    args: { query: 'fortnite gaming montage', kind: 'video' },
+  })
+  // Watching and downloading are different asks, and stay that way.
+  check('an example is still a link to watch', route('show me examples of fortnite montages on youtube')?.name, 'find_reference_video')
+  check('a meme is still a free library', route('get me a meme about losing')?.name, 'add_online_media')
+
+  // --- The downloader ------------------------------------------------------
+
+  check('a watch address is YouTube', isYoutubeUrl('https://www.youtube.com/watch?v=abc'), true)
+  check('a short address is YouTube', isYoutubeUrl('https://youtu.be/abc'), true)
+  check('the mobile site is YouTube', isYoutubeUrl('https://m.youtube.com/watch?v=abc'), true)
+  check('somewhere else is not', isYoutubeUrl('https://vimeo.com/123'), false)
+  check('a lookalike host is not', isYoutubeUrl('https://youtube.com.evil.example/watch?v=abc'), false)
+  check('nonsense is not', isYoutubeUrl('not a url'), false)
+
+  check('progress is read off the line', progressFromLine('[download]  42.5% of 10.00MiB at 1.00MiB/s'), 0.425)
+  check('the finished line reads as done', progressFromLine('[download] 100% of 10.00MiB'), 1)
+  check('another line means nothing', progressFromLine('[youtube] abc: Downloading webpage'), null)
+
+  check(
+    'a private video is explained rather than repeated verbatim',
+    readFailure('ERROR: [youtube] abc: Private video. Sign in if you\'ve been granted access'),
+    'That video is private, age-restricted or region-locked, so it cannot be downloaded.',
+  )
+  check(
+    'an unknown failure is still passed on',
+    readFailure('ERROR: something went sideways'),
+    'something went sideways',
+  )
+  check('no error line at all still says something', readFailure('') !== '', true)
+  check(
+    'a certificate failure points at the network rather than the video',
+    readFailure('ERROR: [SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed').includes('inspecting traffic'),
+    true,
+  )
+
+  // What yt-dlp actually wrote during a real run.
+  check(
+    'the report line is read back',
+    parseReport('C:\\downloads\\A Montage [abc].mp4\tA Montage\tClipMaster\t260\r\n'),
+    { path: 'C:\\downloads\\A Montage [abc].mp4', title: 'A Montage', channel: 'ClipMaster', duration: 260 },
+  )
+  // A direct file has no uploader, and yt-dlp writes NA rather than nothing.
+  check('a missing field is not treated as a name', parseReport('C:\\downloads\\clip.mp4\tclip\tNA\tNA')?.channel, '')
+  check('a missing length is zero', parseReport('C:\\downloads\\clip.mp4\tclip\tNA\tNA')?.duration, 0)
+  check('an empty report is nothing', parseReport(''), null)
+  check('a report with no path is nothing', parseReport('\ttitle\tchannel\t10'), null)
+
+  check('a copy fetched today is not stale', isStale(Date.now()), false)
+  check('a copy from last month is stale', isStale(Date.now() - 40 * 24 * 60 * 60 * 1000), true)
+
   // --- Addresses in a reply ----------------------------------------------
 
   const parts = splitLinks('Watch https://youtu.be/abc123 for a good one.')
@@ -370,6 +469,18 @@ async function main() {
         asked.push(`download(${url},${name})`)
         return { path: `C:/downloads/${name || 'file'}.jpg`, name: `${name || 'file'}.jpg`, size: 51_200 }
       },
+      youtube: async (url: string) => {
+        asked.push(`youtube(${url})`)
+        return {
+          path: 'C:/downloads/A Montage [abc].mp4',
+          name: 'A Montage [abc].mp4',
+          size: 40 * 1024 * 1024,
+          title: 'A Montage',
+          channel: 'ClipMaster',
+          duration: 260,
+        }
+      },
+      onProgress: () => () => {},
       open: async () => true,
     },
   }
@@ -419,6 +530,60 @@ async function main() {
   check('a reference search reaches the desktop', asked.includes('videos(gaming montages)'), true)
   check('a real link comes back', watch.summary.includes('https://www.youtube.com/watch?v=abc'), true)
   check('the channel and length are given', watch.summary.includes('ClipMaster (4:20)'), true)
+
+  // --- Pulling a whole video down -----------------------------------------
+
+  const pulled = await bridge.downloadVideo({ query: 'fortnite montage' })
+  check('a download searches YouTube first', asked.includes('videos(fortnite montage)'), true)
+  check('the top hit is what gets fetched', asked.includes('youtube(https://www.youtube.com/watch?v=abc)'), true)
+  check('the file lands in the library', state.media.some((item) => item.name.includes('A Montage')), true)
+  check('the reply names the video and channel', pulled.summary.includes('"A Montage" from ClipMaster'), true)
+  check('the reply gives its size and length', pulled.summary.includes('4:20'), true)
+  check('the reply says whose video it is', pulled.summary.includes('rather than yours'), true)
+  check('the reply does not promise a safe clip length', /short enough to be exempt/.test(pulled.summary), true)
+  check('a download is not a failure', pulled.error, undefined)
+
+  // The list from find_reference_video is what "the first one" refers to.
+  const byChoice = await bridge.downloadVideo({ choice: 1 })
+  check('a numbered pick needs no fresh search', byChoice.error, undefined)
+  const noSuch = await bridge.downloadVideo({ choice: 7 })
+  check('a number past the end is refused', noSuch.error !== undefined, true)
+
+  const direct = await bridge.downloadVideo({ url: 'https://youtu.be/xyz' })
+  check('a given link is fetched as it stands', asked.includes('youtube(https://youtu.be/xyz)'), true)
+  check('a given link skips the search', direct.error, undefined)
+
+  // What went wrong for the user: the libraries have no gameplay, so the
+  // request has to carry on to where the video actually is.
+  const barren = createHostBridge({
+    getState: () => state,
+    applyState: (next) => {
+      state = next
+    },
+    importDialog: async () => [],
+    importPaths: async (paths) => {
+      const item = media(paths[0].split('/').pop() as string)
+      state = { ...state, media: [...state.media, item] }
+      return { items: [item], failed: [] }
+    },
+    desktop: {
+      web: {
+        ...desktopStub.web,
+        media: async (query: string, kind: string) => {
+          asked.push(`media(${query},${kind})`)
+          return { query, kind, results: [] }
+        },
+      },
+    } as unknown as NonNullable<Window['aicut']>,
+  })
+
+  const fellBack = await barren.addOnlineMedia({ query: 'fortnite gaming montage', kind: 'video' })
+  check('an empty library search for video carries on to YouTube', asked.includes('videos(fortnite gaming montage)'), true)
+  check('the fallback actually brings the file back', fellBack.error, undefined)
+  check('the fallback says where it came from', fellBack.summary.includes('ClipMaster'), true)
+
+  const stillNothing = await barren.addOnlineMedia({ query: 'a quiet afternoon', kind: 'image' })
+  check('an empty picture search does not go to YouTube', stillNothing.error !== undefined, true)
 
   const brokenLink = createHostBridge({
     getState: () => state,

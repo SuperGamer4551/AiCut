@@ -146,9 +146,14 @@ function words(query: string): string[] {
 }
 
 /**
- * Puts the likeliest answer first. Titles that echo the search win, and a
- * result that knows its own size is preferred because it is more likely to be
- * the real file rather than a placeholder.
+ * Puts the likeliest answer first and throws away the rest. Titles that echo
+ * the search win, and a result that knows its own size is preferred because it
+ * is more likely to be the real file rather than a placeholder.
+ *
+ * A title echoing none of the search is dropped rather than ranked last. These
+ * libraries answer a query they cannot satisfy with whatever was nearest, so
+ * keeping the also-rans means the top result for something they simply do not
+ * hold is a stranger — which is worse than admitting there was nothing.
  */
 export function rankResults(results: WebMediaResult[], query: string): WebMediaResult[] {
   const wanted = words(query)
@@ -166,8 +171,11 @@ export function rankResults(results: WebMediaResult[], query: string): WebMediaR
       const title = result.title.toLowerCase()
       const hits = wanted.filter((word) => title.includes(word)).length
       const score = hits * 10 + (result.width ? 2 : 0) + (result.duration ? 1 : 0)
-      return { result, score, index }
+      return { result, score, index, hits }
     })
+    // Nothing to judge by means everything stays; a query worth matching has to
+    // be matched.
+    .filter((entry) => wanted.length === 0 || entry.hits > 0)
     .sort((a, b) => b.score - a.score || a.index - b.index)
     .map((entry) => entry.result)
 }

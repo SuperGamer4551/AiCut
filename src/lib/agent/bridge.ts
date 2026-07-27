@@ -4,7 +4,7 @@ import { extensionFor, formatFor } from '../export/plan'
 import type { ClipMeasurement } from '../analyze/highlights'
 import { describeLoudness, findHighlights, keepRangesFrom } from '../analyze/highlights'
 import { describeFrame, frameForPlacement, readPlacement } from '../overlay'
-import type { WebMediaResult } from '../web/sources'
+import type { ReferenceVideo, WebMediaResult } from '../web/sources'
 import { readMediaKind } from '../web/sources'
 import { addTrackAtTop, defaultTrackId } from '../timeline'
 import { learnedDefaults } from './memory'
@@ -17,7 +17,14 @@ import {
   useSourceRange,
 } from './recipes'
 import { findClip, findMedia, parseSeconds } from './runtime'
-import type { ExportOptions, HostBridge, HostReply, ProjectState, PublishOptions } from './types'
+import type {
+  DownloadVideoOptions,
+  ExportOptions,
+  HostBridge,
+  HostReply,
+  ProjectState,
+  PublishOptions,
+} from './types'
 
 /**
  * The half of the tool surface that needs the desktop app: reading the disk,
@@ -240,6 +247,7 @@ export function createHostBridge(deps: BridgeDeps): HostBridge {
   // What the last internet search turned up, so "add the second one" means
   // something on the next turn.
   let lastFound: WebMediaResult[] = []
+  let lastVideos: ReferenceVideo[] = []
 
   async function resolveOutput(options: ExportOptions, format: string): Promise<string | null> {
     if (options.output) return options.output
@@ -328,6 +336,67 @@ export function createHostBridge(deps: BridgeDeps): HostBridge {
     // The import lands in the project through its own state update, so the
     // freshest snapshot is the one to build on.
     return { state: deps.getState(), item }
+  }
+
+  /**
+   * A whole video off YouTube, as a file in the library. The search runs here
+   * rather than in the caller so that picking the top hit and saying which one
+   * was picked stay together.
+   */
+  async function pullFromYoutube(options: DownloadVideoOptions): Promise<HostReply> {
+    if (!desktop?.web?.youtube) return fail(NEEDS_INTERNET)
+
+    const query = word(options.query)
+    let link = word(options.url)
+    let picked: ReferenceVideo | null = null
+
+    if (!link && options.choice !== undefined) {
+      const choice = lastVideos[Math.round(options.choice) - 1]
+      if (!choice) {
+        return fail(
+          lastVideos.length === 0
+            ? 'I have not listed any videos to pick from yet.'
+            : `There is no number ${options.choice} in that list; there ${
+                lastVideos.length === 1 ? 'is 1 video' : `are ${lastVideos.length} videos`
+              }.`,
+        )
+      }
+      picked = choice
+      link = choice.url
+    }
+
+    if (!link) {
+      if (!query) return fail('Tell me which video to download, or what to search YouTube for.')
+
+      deps.notify?.(`Searching YouTube for ${query}…`)
+      const found = await desktop.web.videos(query, 5)
+      if ('error' in found) return fail(found.error)
+
+      lastVideos = found.videos
+      picked = found.videos[0] ?? null
+      if (!picked) {
+        return fail(`I could not find anything on YouTube for "${query}". Try wording it differently.`)
+      }
+      link = picked.url
+    }
+
+    deps.notify?.(`Downloading ${picked?.title ?? 'the video'}…`)
+    const saved = await desktop.web.youtube(link)
+    if ('error' in saved) return fail(saved.error)
+
+    const imported = await deps.importPaths([saved.path])
+    const item = imported.items[0]
+    if (!item) return fail(`I downloaded ${saved.name} but could not read it back in.`)
+
+    const from = saved.channel || picked?.channel || 'another channel'
+    const length = saved.duration > 0 ? `, ${clock(saved.duration)} long` : ''
+    const chose = picked && query ? ` It was the top hit for "${query}".` : ''
+
+    return {
+      summary:
+        `Downloaded "${saved.title || item.name}" from ${from} (${formatSize(saved.size)}${length}) into the media panel.${chose}` +
+        ` It is ${from}'s video rather than yours, so it is safe to study and cut from, but anything of it still there in something you upload can draw a Content ID claim, usually on the music. No clip is short enough to be exempt from that.`,
+    }
   }
 
   /** Measures the file behind a clip, reporting trouble the same way ffmpeg does. */
@@ -855,6 +924,11 @@ export function createHostBridge(deps: BridgeDeps): HostBridge {
         lastFound = found.results
         chosen = lastFound[0] ?? null
         if (!chosen) {
+          // The openly licensed libraries hold documentary and archive footage,
+          // not gameplay or anything else from a channel. When they come up
+          // empty for video, YouTube is where the thing actually is.
+          if (kind === 'video') return pullFromYoutube({ query })
+
           return fail(`I could not find a free ${kind} for "${query}". Try wording it differently.`)
         }
       }
@@ -892,13 +966,18 @@ export function createHostBridge(deps: BridgeDeps): HostBridge {
         }
       }
 
+      lastVideos = found.videos
+
       const lines = [`Worth watching for "${query}":`]
       for (const video of found.videos) {
         lines.push(`${video.title} — ${video.channel}${video.length ? ` (${video.length})` : ''}: ${video.url}`)
       }
+      lines.push('Say which one to download if you want the file rather than the link.')
 
       return { summary: lines.join('\n') }
     },
+
+    downloadVideo: pullFromYoutube,
 
     async exportProject(options): Promise<HostReply> {
       if (!desktop) return fail(NEEDS_DESKTOP)

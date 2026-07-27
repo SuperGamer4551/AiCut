@@ -268,6 +268,13 @@ const FETCH_VERB = /\b(?:find|get|grab|download|fetch|search|source|pull|show me
 
 const ONLINE_WORDS = /\b(?:online|internet|the web|off the web|web)\b/
 
+const YOUTUBE = /\byou\s?tube\b|\byt\b/
+
+const YOUTUBE_LINK = /https?:\/\/(?:www\.|m\.|music\.)?(?:youtube\.com|youtu\.be)\/\S+/i
+
+/** Verbs that mean the file itself, not a link to it. */
+const DOWNLOAD_VERB = /\b(?:download|rip|save)\b/
+
 const MEDIA_PANEL = /\bmedia\s+(?:section|panel|library|bin|list)\b/
 
 const WEB_STOP = new Set([
@@ -275,7 +282,7 @@ const WEB_STOP = new Set([
   'meme', 'memes', 'gif', 'gifs', 'sticker', 'stickers', 'reaction', 'image', 'images',
   'picture', 'pictures', 'photo', 'photos', 'wallpaper', 'video', 'videos', 'footage',
   'clip', 'clips', 'sound', 'sounds', 'effect', 'effects', 'sfx', 'music', 'song', 'audio',
-  'stock', 'broll', 'online', 'internet', 'web', 'good', 'nice', 'cool', 'funny',
+  'stock', 'broll', 'online', 'internet', 'web', 'youtube', 'yt', 'good', 'nice', 'cool', 'funny',
   'and', 'of', 'for', 'about', 'to', 'into', 'section', 'panel', 'library',
   'options', 'choices', 'list', 'browse', 'see', 'there', 'something', 'anything',
   // Pointing at what is already open is not a subject to search for: "the best
@@ -299,6 +306,30 @@ export function onlineKind(input: string): 'image' | 'video' | 'gif' | 'audio' |
   return null
 }
 
+const ORDINALS: Record<string, number> = {
+  first: 1, '1st': 1, one: 1,
+  second: 2, '2nd': 2, two: 2,
+  third: 3, '3rd': 3, three: 3,
+  fourth: 4, '4th': 4, four: 4,
+  fifth: 5, '5th': 5, five: 5,
+}
+
+/** Which of something already listed is meant: "the second one", "number 3". */
+export function listChoice(input: string): number | null {
+  const lower = input.toLowerCase()
+
+  const named = /\b(first|second|third|fourth|fifth|1st|2nd|3rd|4th|5th|one|two|three|four|five)\s+(?:one|video|link|result|option)\b/.exec(
+    lower,
+  )
+  if (named) return ORDINALS[named[1]] ?? null
+
+  const numbered = /\b(?:number|no\.?|#)\s*([1-9])\b/.exec(lower)
+  if (numbered) return Number(numbered[1])
+
+  const bare = /\b(first|second|third|fourth|fifth)\b/.exec(lower)
+  return bare ? (ORDINALS[bare[1]] ?? null) : null
+}
+
 /** What a web request is actually about, once the asking has been stripped off. */
 export function webSubject(input: string): string | null {
   const quoted = /"([^"]+)"|'([^']+)'/.exec(input)
@@ -314,7 +345,10 @@ export function webSubject(input: string): string | null {
   if (!tail) return null
 
   const cleaned = tail
-    .replace(/\b(?:on|from|in|off|to|into)\s+(?:the\s+|my\s+)?(?:internet|web|google|online|media\s+\w+)\b/gi, ' ')
+    .replace(
+      /\b(?:on|from|in|off|to|into)\s+(?:the\s+|my\s+)?(?:internet|web|google|online|you\s?tube|yt|media\s+\w+)\b/gi,
+      ' ',
+    )
     // Where it goes and how long it lasts are instructions, not part of the search.
     .replace(/\s+\b(?:at|around|near)\s+(?:the\s+)?(?:start|end|beginning|playhead|\d[\d:.]*\s*(?:s|sec|seconds?)?)\b.*$/i, '')
     .replace(/\s+\bfor\s+\d+(?:\.\d+)?\s*(?:s|sec|seconds?)\b.*$/i, '')
@@ -510,6 +544,25 @@ export function interpretCommand(input: string, state: ProjectState): Interpreta
   if (asks(REFERENCE) || (asks(/\b(?:link|links)\b/) && asks(/\bvideos?\b/))) {
     const subject = webSubject(raw)
     if (subject) return call('find_reference_video', { query: subject })
+  }
+
+  // A pasted link is the whole request: there is nothing to search for and no
+  // other reading of it.
+  const pasted = YOUTUBE_LINK.exec(raw)
+  if (pasted) return call('download_video', { url: pasted[0] })
+
+  // "download the second one", answering a list handed over a moment ago. Which
+  // list that was is the bridge's to remember.
+  if (asks(DOWNLOAD_VERB)) {
+    const which = listChoice(raw)
+    if (which) return call('download_video', { choice: which })
+  }
+
+  // YouTube named outright means the file from there, not a rummage through
+  // libraries that were never going to hold it.
+  if (asks(YOUTUBE) && (asks(DOWNLOAD_VERB) || asks(FETCH_VERB))) {
+    const subject = webSubject(raw)
+    if (subject) return call('download_video', { query: subject })
   }
 
   const wantsOnline = onlineKind(raw)

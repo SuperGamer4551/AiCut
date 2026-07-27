@@ -19,6 +19,7 @@ export const HOST_TOOLS: ToolName[] = [
   'find_online_media',
   'add_online_media',
   'find_reference_video',
+  'download_video',
   'export_project',
   'publish_youtube',
   'youtube_status',
@@ -177,6 +178,16 @@ async function callHost(call: ToolCall, host: HostBridge): Promise<HostReply> {
       const query = str(args.query ?? args.q ?? args.subject ?? args.topic)
       if (!query) return refuse('Tell me what the reference video should show.')
       return host.findReferenceVideo({ query, count: num(args.count ?? args.limit) })
+    }
+
+    case 'download_video': {
+      const query = str(args.query ?? args.q ?? args.subject ?? args.topic ?? args.search)
+      const url = str(args.url ?? args.link ?? args.href)
+      const choice = num(args.choice ?? args.index ?? args.pick)
+      if (!query && !url && choice === undefined) {
+        return refuse('Tell me what video to download, or which of the ones I listed to take.')
+      }
+      return host.downloadVideo({ query, url, choice })
     }
 
     case 'export_project':
