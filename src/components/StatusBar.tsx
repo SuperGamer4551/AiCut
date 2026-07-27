@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import type { Release } from '../lib/version'
 import { APP_VERSION, RELEASES, SEEN_VERSION_KEY } from '../lib/version'
 import type { UpdateState } from '../lib/update'
-import { updateLabel } from '../lib/update'
+import { updateAction, updateBusy } from '../lib/update'
 import './StatusBar.css'
 
 type Props = {
@@ -76,14 +76,34 @@ export function StatusBar({ clips, tracks, overlays, status }: Props) {
   const [open, setOpen] = useState(false)
   const [fresh, setFresh] = useState(false)
   const [update, setUpdate] = useState<UpdateState>({ status: 'idle' })
+  const [asked, setAsked] = useState(false)
+
+  // The browser build has no updater behind it, and an offer it cannot honour
+  // is worse than no offer.
+  const [updatable, setUpdatable] = useState(false)
 
   useEffect(() => {
     const updates = window.aicut?.updates
     if (!updates) return
 
+    setUpdatable(true)
     void updates.state().then(setUpdate)
     return updates.onState(setUpdate)
   }, [])
+
+  // An answer to a question nobody asked any more is just clutter, so the
+  // outcome of a check goes back to offering another one after a moment.
+  useEffect(() => {
+    if (!asked || updateBusy(update) || update.status === 'ready') return
+
+    const id = window.setTimeout(() => setAsked(false), 6000)
+    return () => window.clearTimeout(id)
+  }, [asked, update])
+
+  function check() {
+    setAsked(true)
+    void window.aicut?.updates.check().then(setUpdate)
+  }
 
   // A version the user has not seen yet is worth pointing at once.
   useEffect(() => {
@@ -137,7 +157,17 @@ export function StatusBar({ clips, tracks, overlays, status }: Props) {
           Restart to update
         </button>
       ) : (
-        updateLabel(update) && <span className="update-note">{updateLabel(update)}</span>
+        updatable && (
+          <button
+            className="update-note"
+            type="button"
+            onClick={check}
+            disabled={updateBusy(update)}
+            title={update.status === 'error' && update.message ? update.message : 'Check for a new version'}
+          >
+            {updateAction(update, asked)}
+          </button>
+        )
       )}
 
       {open && <ReleaseNotes releases={RELEASES} onClose={() => setOpen(false)} />}

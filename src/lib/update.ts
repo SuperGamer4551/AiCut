@@ -39,3 +39,34 @@ export function updateLabel(update: UpdateState): string | null {
       return null
   }
 }
+
+/** Nothing useful can be asked of the updater while it is already working. */
+export function updateBusy(update: UpdateState): boolean {
+  return update.status === 'checking' || update.status === 'available' || update.status === 'downloading'
+}
+
+/**
+ * The word on the button that asks for a check. Staying quiet is right until
+ * somebody actually asks: an answer of "nothing new" is worth saying only to
+ * the person who just pressed the button, which is otherwise indistinguishable
+ * from the button having done nothing at all.
+ */
+export function updateAction(update: UpdateState, asked: boolean): string {
+  const working = updateLabel(update)
+  if (working) return working
+
+  if (!asked) return 'Check for updates'
+
+  switch (update.status) {
+    case 'checking':
+      return 'Checking…'
+    case 'current':
+      return 'Up to date'
+    case 'unsupported':
+      return 'Only the installed app updates itself'
+    case 'error':
+      return 'Could not check for updates'
+    default:
+      return 'Check for updates'
+  }
+}

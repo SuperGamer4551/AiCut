@@ -15,7 +15,7 @@ import {
   rulerSteps,
 } from '../src/lib/timeline'
 import { clampCrop, cropForAspect, isCropped } from '../src/lib/crop'
-import { updateLabel } from '../src/lib/update'
+import { updateAction, updateBusy, updateLabel } from '../src/lib/update'
 import {
   DEFAULT_LAYOUT,
   DEFAULT_SIZES,
@@ -341,6 +341,29 @@ check(
   'Downloading 0.9.0 0%',
 )
 check('one waiting to be installed names the version', updateLabel({ status: 'ready', version: '0.9.0' }), 'Version 0.9.0 is ready')
+
+// Asking is different from being told. Once somebody presses the button, the
+// quiet outcomes have to speak, or the button looks broken.
+check('the button offers a check when nothing is happening', updateAction({ status: 'idle' }, false), 'Check for updates')
+check('a check nobody asked for stays quiet', updateAction({ status: 'current' }, false), 'Check for updates')
+check('a check somebody asked for reports finding nothing', updateAction({ status: 'current' }, true), 'Up to date')
+check('a check in progress says so once asked', updateAction({ status: 'checking' }, true), 'Checking…')
+check('a failure is admitted to whoever asked', updateAction({ status: 'error', message: 'no host' }, true), 'Could not check for updates')
+check(
+  'running from source explains itself when asked',
+  updateAction({ status: 'unsupported' }, true),
+  'Only the installed app updates itself',
+)
+check(
+  'work in progress outranks the offer either way',
+  updateAction({ status: 'downloading', version: '0.10.0', percent: 12 }, false),
+  'Downloading 0.10.0 12%',
+)
+
+check('a check in flight cannot be asked again', updateBusy({ status: 'checking' }), true)
+check('a download in flight cannot be asked again', updateBusy({ status: 'downloading' }), true)
+check('an idle updater is ready to be asked', updateBusy({ status: 'idle' }), false)
+check('a finished download is not busy', updateBusy({ status: 'ready' }), false)
 
 console.log(failures === 0 ? '\nRESULT: pass' : `\nRESULT: fail (${failures})`)
 process.exit(failures === 0 ? 0 : 1)

@@ -77,9 +77,28 @@
 
 .update-note {
   margin-left: auto;
+  flex: none;
+  padding: 2px 9px;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  background: none;
   white-space: nowrap;
+  font: inherit;
   font-variant-numeric: tabular-nums;
   color: var(--text-dim);
+  transition: color 120ms ease, border-color 120ms ease, background 120ms ease;
+}
+
+.update-note:hover:not(:disabled) {
+  border-color: var(--border-strong);
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--text);
+}
+
+/* Mid-check there is nothing to press, but the text still has to be readable. */
+.update-note:disabled {
+  cursor: default;
+  opacity: 1;
 }
 
 .update-ready {

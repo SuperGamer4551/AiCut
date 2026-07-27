@@ -15,6 +15,15 @@ export type Release = {
 
 export const RELEASES: Release[] = [
   {
+    version: '0.10.1',
+    date: '2026-07-27',
+    title: 'You can ask it to check for updates',
+    changes: [
+      'The bottom bar has a "Check for updates" button. It used to look once at startup and then not again for six hours, with no way to hurry it along and nothing on screen explaining the wait.',
+      'It answers you either way now: "Up to date" when there is nothing new, rather than appearing to do nothing at all.',
+    ],
+  },
+  {
     version: '0.10.0',
     date: '2026-07-27',
     title: 'It gets videos off YouTube now',
