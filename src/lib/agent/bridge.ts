@@ -4,6 +4,8 @@ import { extensionFor, formatFor } from '../export/plan'
 import type { ClipMeasurement } from '../analyze/highlights'
 import { describeLoudness, findHighlights, keepRangesFrom } from '../analyze/highlights'
 import { describeFrame, frameForPlacement, readPlacement } from '../overlay'
+import type { WebMediaResult } from '../web/sources'
+import { readMediaKind } from '../web/sources'
 import { addTrackAtTop, defaultTrackId } from '../timeline'
 import { learnedDefaults } from './memory'
 import {
@@ -57,10 +59,26 @@ const OVERLAY_TRACK_NAME = 'Memes & overlays'
 
 const NEEDS_DESKTOP = 'That needs the desktop app; the browser build cannot reach your files.'
 
+const NEEDS_INTERNET = 'That needs the desktop app, which is what does the searching and downloading.'
+
 const MAX_LISTED = 24
 
 function fail(summary: string): HostReply {
   return { summary, error: summary }
+}
+
+function word(value: unknown): string {
+  return typeof value === 'string' ? value.trim() : ''
+}
+
+/** One line about a search result: what it is, where it came from, and the terms. */
+function describeFound(result: WebMediaResult): string {
+  const shape = result.width && result.height ? `${result.width}×${result.height}` : ''
+  const length = result.duration ? seconds(result.duration) : ''
+  const weight = result.size ? formatSize(result.size) : ''
+  const facts = [shape, length, weight].filter(Boolean).join(', ')
+
+  return `${result.title} — ${result.source}${facts ? ` (${facts})` : ''}, licensed ${result.license}`
 }
 
 function names(items: MediaItem[]): string {
@@ -218,6 +236,10 @@ function clock(value: number): string {
 
 export function createHostBridge(deps: BridgeDeps): HostBridge {
   const desktop = deps.desktop
+
+  // What the last internet search turned up, so "add the second one" means
+  // something on the next turn.
+  let lastFound: WebMediaResult[] = []
 
   async function resolveOutput(options: ExportOptions, format: string): Promise<string | null> {
     if (options.output) return options.output
@@ -754,6 +776,128 @@ export function createHostBridge(deps: BridgeDeps): HostBridge {
           trackId,
         )} at ${clock(placed.clip.start)}. This is a card I drew, not footage — I cannot invent a recording of something that never happened.`,
       }
+    },
+
+    async searchWeb(options): Promise<HostReply> {
+      if (!desktop?.web) return fail(NEEDS_INTERNET)
+
+      const query = word(options.query)
+      if (!query) return fail('Tell me what to look up.')
+
+      deps.notify?.(`Reading up on ${query}…`)
+      const found = await desktop.web.search(query)
+      if ('error' in found) return fail(found.error)
+
+      if (!found.answer && found.articles.length === 0) {
+        return { summary: `I searched for "${query}" and nothing useful came back.` }
+      }
+
+      const lines = found.answer ? [found.answer] : [`What I found on "${query}":`]
+      for (const article of found.articles.slice(0, 4)) {
+        lines.push(`${article.title} — ${article.source}: ${article.url}`)
+      }
+
+      return { summary: lines.join('\n') }
+    },
+
+    async findOnlineMedia(options): Promise<HostReply> {
+      if (!desktop?.web) return fail(NEEDS_INTERNET)
+
+      const query = word(options.query)
+      if (!query) return fail('Tell me what to search the internet for.')
+
+      const kind = readMediaKind(options.kind) ?? 'image'
+      deps.notify?.(`Searching for ${kind === 'meme' ? 'memes' : `${kind}s`}…`)
+
+      const found = await desktop.web.media(query, kind, options.count ?? 5)
+      if ('error' in found) return fail(found.error)
+
+      lastFound = found.results
+      if (lastFound.length === 0) {
+        return { summary: `I could not find a free ${kind} for "${query}". A different wording may turn something up.` }
+      }
+
+      const lines = [`Free ${kind === 'meme' ? 'memes' : `${kind}s`} for "${query}":`]
+      lastFound.forEach((result, index) => {
+        lines.push(`${index + 1}. ${describeFound(result)}`)
+      })
+      lines.push('Say which one to add, or I can take the first.')
+
+      return { summary: lines.join('\n') }
+    },
+
+    async addOnlineMedia(options): Promise<HostReply> {
+      if (!desktop?.web) return fail(NEEDS_INTERNET)
+
+      const query = word(options.query)
+      const link = word(options.url)
+      const kind = readMediaKind(options.kind) ?? 'image'
+
+      let chosen: WebMediaResult | null = null
+
+      if (options.choice !== undefined && !link) {
+        const picked = lastFound[Math.round(options.choice) - 1]
+        if (!picked) {
+          return fail(
+            lastFound.length === 0
+              ? 'I have not listed anything to pick from yet.'
+              : `There is no number ${options.choice} in that list; there ${lastFound.length === 1 ? 'is 1 result' : `are ${lastFound.length} results`}.`,
+          )
+        }
+        chosen = picked
+      } else if (!link) {
+        if (!query) return fail('Tell me what to find online.')
+
+        deps.notify?.(`Searching for ${query}…`)
+        const found = await desktop.web.media(query, kind, 5)
+        if ('error' in found) return fail(found.error)
+
+        lastFound = found.results
+        chosen = lastFound[0] ?? null
+        if (!chosen) {
+          return fail(`I could not find a free ${kind} for "${query}". Try wording it differently.`)
+        }
+      }
+
+      const address = link || chosen?.url
+      if (!address) return fail('I have no link to download.')
+
+      deps.notify?.(`Downloading ${chosen?.title ?? 'the file'}…`)
+      const saved = await desktop.web.download(address, chosen?.title ?? '')
+      if ('error' in saved) return fail(saved.error)
+
+      const imported = await deps.importPaths([saved.path])
+      const item = imported.items[0]
+      if (!item) return fail(`I downloaded ${saved.name} but could not read it back in.`)
+
+      const credit = chosen ? ` from ${chosen.source}, licensed ${chosen.license}` : ''
+      return {
+        summary: `Added ${item.name} (${formatSize(saved.size)}) to the media panel${credit}. Drag it onto the timeline, or tell me where to put it.`,
+      }
+    },
+
+    async findReferenceVideo(options): Promise<HostReply> {
+      if (!desktop?.web) return fail(NEEDS_INTERNET)
+
+      const query = word(options.query)
+      if (!query) return fail('Tell me what the reference video should show.')
+
+      deps.notify?.(`Looking for videos about ${query}…`)
+      const found = await desktop.web.videos(query, options.count ?? 4)
+      if ('error' in found) return fail(found.error)
+
+      if (found.videos.length === 0) {
+        return {
+          summary: `I could not read the results for "${query}", but this search will show them: ${found.searchUrl}`,
+        }
+      }
+
+      const lines = [`Worth watching for "${query}":`]
+      for (const video of found.videos) {
+        lines.push(`${video.title} — ${video.channel}${video.length ? ` (${video.length})` : ''}: ${video.url}`)
+      }
+
+      return { summary: lines.join('\n') }
     },
 
     async exportProject(options): Promise<HostReply> {

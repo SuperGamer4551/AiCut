@@ -37,6 +37,37 @@ export type UpdateState = {
   message?: string
 }
 
+export type WebMediaKind = 'image' | 'video' | 'gif' | 'audio' | 'meme'
+
+export type WebMediaResult = {
+  title: string
+  url: string
+  pageUrl: string
+  source: string
+  license: string
+  author?: string
+  extension: string
+  kind: 'video' | 'audio' | 'image'
+  width?: number
+  height?: number
+  duration?: number
+  size?: number
+}
+
+export type WebArticle = {
+  title: string
+  summary: string
+  url: string
+  source: string
+}
+
+export type ReferenceVideo = {
+  title: string
+  url: string
+  channel: string
+  length?: string
+}
+
 export type MediaRoot = { name: string; path: string }
 
 export type FolderEntry = {
@@ -144,6 +175,39 @@ const api = {
       aspect?: number | string
       look?: string
     }): Promise<GeneratedClip | { error: string }> => ipcRenderer.invoke('generate:clip', request),
+  },
+
+  web: {
+    /** Reads around a subject: an answer where there is one, and articles to follow. */
+    search: (
+      query: string,
+    ): Promise<{ query: string; answer: string; articles: WebArticle[] } | { error: string }> =>
+      ipcRenderer.invoke('web:search', query),
+
+    /** Openly licensed pictures, footage, gifs, memes or sound. */
+    media: (
+      query: string,
+      kind: WebMediaKind,
+      limit?: number,
+    ): Promise<{ query: string; kind: WebMediaKind; results: WebMediaResult[] } | { error: string }> =>
+      ipcRenderer.invoke('web:media', query, kind, limit),
+
+    /** Videos to watch for reference; these are linked, never downloaded. */
+    videos: (
+      query: string,
+      limit?: number,
+    ): Promise<{ query: string; videos: ReferenceVideo[]; searchUrl: string } | { error: string }> =>
+      ipcRenderer.invoke('web:videos', query, limit),
+
+    /** Saves a file to the app's download folder and reports where it landed. */
+    download: (
+      url: string,
+      name?: string,
+    ): Promise<{ path: string; name: string; size: number } | { error: string }> =>
+      ipcRenderer.invoke('web:download', url, name),
+
+    /** Hands a link to the system browser. */
+    open: (url: string): Promise<boolean> => ipcRenderer.invoke('web:open', url),
   },
 
   updates: {

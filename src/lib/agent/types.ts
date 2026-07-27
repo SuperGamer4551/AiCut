@@ -33,6 +33,10 @@ export type ToolName =
   | 'punch_in'
   | 'make_montage'
   | 'generate_clip'
+  | 'search_web'
+  | 'find_online_media'
+  | 'add_online_media'
+  | 'find_reference_video'
   | 'export_project'
   | 'publish_youtube'
   | 'youtube_status'
@@ -171,6 +175,38 @@ export type GenerateOptions = {
   at?: unknown
 }
 
+/** Reading up on a subject before talking about it or editing around it. */
+export type SearchOptions = {
+  query?: unknown
+}
+
+/**
+ * Hunting through the free media libraries. The kind is a word rather than a
+ * file type, because "meme" is a thing to look for and not a format.
+ */
+export type OnlineMediaOptions = {
+  query?: unknown
+  kind?: unknown
+  count?: number
+}
+
+/**
+ * Bringing something down from the internet into the library. Either the
+ * address is already known, or one is found by searching first.
+ */
+export type AddOnlineOptions = {
+  url?: unknown
+  query?: unknown
+  kind?: unknown
+  /** Which of the results just listed to take, counting from one. */
+  choice?: number
+}
+
+export type ReferenceOptions = {
+  query?: unknown
+  count?: number
+}
+
 export type HostBridge = {
   /**
    * The project as it stands after a host tool ran, since importing changes it
@@ -189,6 +225,10 @@ export type HostBridge = {
   punchIn: (options: PunchInOptions) => Promise<HostReply>
   makeMontage: (options: MontageOptions) => Promise<HostReply>
   generateClip: (options: GenerateOptions) => Promise<HostReply>
+  searchWeb: (options: SearchOptions) => Promise<HostReply>
+  findOnlineMedia: (options: OnlineMediaOptions) => Promise<HostReply>
+  addOnlineMedia: (options: AddOnlineOptions) => Promise<HostReply>
+  findReferenceVideo: (options: ReferenceOptions) => Promise<HostReply>
   exportProject: (options: ExportOptions) => Promise<HostReply>
   publish: (options: PublishOptions) => Promise<HostReply>
   youtubeStatus: () => Promise<HostReply>

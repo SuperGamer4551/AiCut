@@ -15,6 +15,19 @@ export type Release = {
 
 export const RELEASES: Release[] = [
   {
+    version: '0.9.0',
+    date: '2026-07-26',
+    title: 'It can go and look things up',
+    changes: [
+      'The assistant reaches the internet. "Find me a meme about losing" downloads one straight into your media panel, and the same works for footage, pictures, gifs and sound effects.',
+      'It only pulls from libraries that state a licence — Openverse, Wikimedia Commons, the Internet Archive and Imgflip — and it tells you the licence every time, so nothing it hands you should earn a copyright strike.',
+      '"Look up the new Fortnite season" reads around a subject before answering, so its advice and the hooks it writes are based on something rather than nothing.',
+      '"Show me examples of good gaming montages" hands back real YouTube links to watch. Links in the chat are clickable and open in your browser.',
+      'It chains steps on its own now: look it up, fetch the meme, place it, write the hook, all from one sentence.',
+      'It will not download somebody else\'s YouTube video. That one is theirs.',
+    ],
+  },
+  {
     version: '0.8.1',
     date: '2026-07-26',
     title: 'It keeps itself up to date',

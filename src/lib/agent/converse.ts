@@ -25,7 +25,7 @@ const FREE_MODELS =
   'Open-ended conversation is free: run Ollama or LM Studio on this computer and there is nothing to sign up for and nothing to pay, or paste a free-tier key from Groq, Google AI Studio or OpenRouter into the settings above.'
 
 const CAN_DO =
-  'I can look through your folders and import what I find, cut a recording down to its best moment, make it vertical for a short, drop the dead air, add text and memes, punch in on the action, build a montage, draw title and end cards, then render it or publish it to YouTube.'
+  'I can look through your folders and import what I find, search the internet for memes, footage, pictures and sound you are allowed to use and drop them straight into your media, read up on a subject before we talk about it, point you at videos worth watching, cut a recording down to its best moment, make it vertical for a short, drop the dead air, add text and memes, punch in on the action, build a montage, draw title and end cards, then render it or publish it to YouTube.'
 
 function nothingYet(context: ChatContext): string {
   if (context.clips > 0) return `You have ${context.clips === 1 ? 'a clip' : `${context.clips} clips`} on the timeline.`
@@ -184,10 +184,16 @@ const TOPICS: Topic[] = [
       'Say "add a hook saying \'wait for it\'" or "add a caption at the bottom saying clip 1 of 3". There are three looks: meme is heavy white text at the top, title is large in the middle, caption sits along the bottom. It shows in the preview and is burned into the export. Captions written from speech are not in yet.',
   },
   {
+    id: 'internet',
+    test: /\b(?:internet|online|the web|search the web|google|browse|download|stock footage|b.?roll|copyright|licen[sc]e|royalty.?free|creative commons)\b/,
+    answer: () =>
+      'I can go and get things. "Find me a meme about losing" downloads one into your media panel, and the same works for footage, pictures, gifs and sound effects — "get some rain footage", "find a swoosh sound". I only pull from libraries that state a licence, so nothing I hand you should earn a copyright strike, and I tell you the licence each time. "Look up the new Fortnite season" reads around a subject, and "show me examples of good gaming montages" hands back YouTube links to watch. I will not download somebody else\'s YouTube video; that one is theirs.',
+  },
+  {
     id: 'memes',
     test: /\b(?:meme|memes|reaction|sound effect|sound effects|sfx|vine boom|bruh)\b/,
     answer: () =>
-      'Say "drop the bruh meme in at 0:12" and I find the file, import it, and place it. Over footage it goes to a corner so it does not hide the action; on its own it takes the whole frame. Sounds land on an audio track instead. Tell me where you keep them — "my memes are in D:\\memes" — and I will look there first.',
+      'Two ways. "Find me a meme about losing" goes to the internet and downloads one into your media panel. "Drop the bruh meme in at 0:12" looks on your own computer, imports it and places it — over footage it goes to a corner so it does not hide the action, and sounds land on an audio track. Tell me where you keep yours — "my memes are in D:\\memes" — and I will look there first.',
   },
   {
     id: 'montage',
@@ -286,7 +292,7 @@ export function fallbackReply(context: ChatContext): string {
   return [
     'I did not follow that. With no model behind me I take direct instructions rather than anything phrased loosely.',
     CAN_DO,
-    'Try "make this into a youtube short", "cut the dead air", or "what can you do".',
+    'Try "make this into a youtube short", "find me a meme about losing", "look up the new fortnite season", or "what can you do".',
     FREE_MODELS,
   ].join(' ')
 }

@@ -268,6 +268,27 @@
 .ai-action-summary {
   font-size: 12px;
   line-height: 1.5;
+  /* Search results arrive as a list, one per line. */
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.ai-link {
+  color: var(--accent-cyan);
+  text-decoration: none;
+  border-bottom: 1px solid rgba(var(--accent-rgb), 0.4);
+  cursor: pointer;
+  transition: color 120ms var(--ease), border-color 120ms var(--ease);
+}
+
+.ai-link:hover {
+  color: var(--accent);
+  border-bottom-color: var(--accent);
+}
+
+.role-user .ai-link {
+  color: var(--on-accent);
+  border-bottom-color: rgba(255, 255, 255, 0.5);
 }
 
 .ai-typing {

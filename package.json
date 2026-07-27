@@ -1,6 +1,6 @@
 {
   "name": "aicut",
-  "version": "0.8.1",
+  "version": "0.9.0",
   "private": true,
   "description": "AI-powered video editing desktop app",
   "author": "AiCut",
@@ -16,7 +16,7 @@
     "icon": "node scripts/make-icon.mjs",
     "dist": "npm run icon && npm run build && electron-builder --win",
     "updates:stage": "node scripts/stage-updates.mjs",
-    "release": "npm run icon && npm run build && electron-builder --win --publish always",
+    "release": "npm run icon && npm run build && node scripts/ensure-release.mjs && electron-builder --win --publish always",
     "build": "tsc -b && vite build",
     "preview": "vite preview",
     "electron:dev": "vite",
@@ -28,7 +28,8 @@
     "check:files": "esbuild scripts/check-files.ts --bundle --platform=node --format=cjs --outfile=node_modules/.cache/check-files.cjs --log-level=warning && node node_modules/.cache/check-files.cjs",
     "check:youtube": "esbuild scripts/check-youtube.ts --bundle --platform=node --format=cjs --outfile=node_modules/.cache/check-youtube.cjs --log-level=warning && node node_modules/.cache/check-youtube.cjs",
     "check:highlights": "esbuild scripts/check-highlights.ts --bundle --platform=node --format=cjs --outfile=node_modules/.cache/check-highlights.cjs --log-level=warning && node node_modules/.cache/check-highlights.cjs",
-    "check": "npm run typecheck && npm run check:timeline && npm run check:agent && npm run check:ai && npm run check:export && npm run check:files && npm run check:youtube && npm run check:highlights",
+    "check:web": "esbuild scripts/check-web.ts --bundle --platform=node --format=cjs --outfile=node_modules/.cache/check-web.cjs --log-level=warning && node node_modules/.cache/check-web.cjs",
+    "check": "npm run typecheck && npm run check:timeline && npm run check:agent && npm run check:ai && npm run check:export && npm run check:files && npm run check:youtube && npm run check:highlights && npm run check:web",
     "check:model": "esbuild scripts/check-model.ts --bundle --platform=node --format=cjs --outfile=node_modules/.cache/check-model.cjs --log-level=warning && node node_modules/.cache/check-model.cjs",
     "check:live": "esbuild scripts/check-live.ts --bundle --platform=node --format=cjs --external:electron --external:ffmpeg-static --outfile=node_modules/.cache/check-live.cjs --log-level=warning && node node_modules/.cache/check-live.cjs",
     "check:protocol": "electron scripts/check-media-protocol.cjs"

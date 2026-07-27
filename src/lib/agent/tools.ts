@@ -388,6 +388,65 @@ export const TOOL_SPECS: ToolSpec[] = [
     },
   },
   {
+    name: 'search_web',
+    description:
+      'Read up on something on the internet and get back an answer and a few articles to follow. Use it whenever knowing the actual facts would make your reply better: what a game just patched, what a trend is, how long a Short can be, what a word means, who someone is. Also use it before writing titles, descriptions or hooks about a subject you are hazy on, rather than guessing. It only reads; it changes nothing in the project.',
+    parameters: {
+      type: 'object',
+      properties: {
+        query: { type: 'string', description: 'What to look up, phrased as you would type it into a search box.' },
+      },
+      required: ['query'],
+    },
+  },
+  {
+    name: 'find_online_media',
+    description:
+      'Search the free media libraries for pictures, footage, gifs, memes or sound the user is allowed to use, and list what is there with its licence. Nothing is downloaded and the project does not change: this is for showing the options. If they plainly just want it in the project, call add_online_media instead and skip this step.',
+    parameters: {
+      type: 'object',
+      properties: {
+        query: { type: 'string', description: 'What the material should show, such as "surprised cat" or "rain on a window".' },
+        kind: {
+          type: 'string',
+          description: '"image", "video", "gif", "audio", or "meme". Defaults to image.',
+        },
+        count: { type: 'number', description: 'How many to list. Defaults to 5.' },
+      },
+      required: ['query'],
+    },
+  },
+  {
+    name: 'add_online_media',
+    description:
+      'Download something from the free libraries and put it in the media panel, ready to drag onto the timeline. This is the tool for "find me a meme about losing", "get some rain footage", or "add a swoosh sound". Give it a query and it searches and takes the best match by itself. Give it choice: 2 to take the second thing you just listed, or a direct url when you already have one. Follow it with insert_cutaway or add_clip if it should go on the timeline too.',
+    parameters: {
+      type: 'object',
+      properties: {
+        query: { type: 'string', description: 'What to find. Omit only when passing a url or a choice.' },
+        kind: {
+          type: 'string',
+          description: '"image", "video", "gif", "audio", or "meme". Defaults to image.',
+        },
+        choice: { type: 'number', description: 'Take this one out of the results you last listed, counting from 1.' },
+        url: { type: 'string', description: 'A direct link to the file, when you already have one.' },
+      },
+    },
+  },
+  {
+    name: 'find_reference_video',
+    description:
+      'Find videos on YouTube to watch as a reference and hand back real links. Use it for "show me a good example of a Fortnite montage", "what does a good hook look like", or when your advice would land better with something to watch. These are links only: nothing is downloaded, because other people\'s videos are theirs.',
+    parameters: {
+      type: 'object',
+      properties: {
+        query: { type: 'string', description: 'What the reference should show.' },
+        count: { type: 'number', description: 'How many links. Defaults to 4.' },
+      },
+      required: ['query'],
+    },
+  },
+  {
     name: 'export_project',
     description:
       'Render the timeline to a video file on disk. Omit the output path to let the user choose where it goes.',
@@ -449,6 +508,9 @@ export const SYSTEM_PROMPT = [
   'For YouTube work: add_text burns in a hook, a meme caption or a title; insert_cutaway drops a meme, a reaction or a sound effect in at a moment and finds the file itself; punch_in pushes the picture in on the action; make_montage cuts several clips down to their best moments back to back; place_clip turns a clip into a corner inset.',
   'A short wants a hook in the first couple of seconds. When you make one and the user has not written the words, offer a hook rather than inventing a claim about their footage.',
   'You cannot film or invent footage, and you must never pretend otherwise: there is no text-to-video here. Do not let that turn into refusing to act. When someone asks you to generate a video about a subject, call generate_clip to draw a card carrying that subject as its words, then say in one sentence that it is a card rather than footage. Only when they plainly mean their own recording — "a clip of my gameplay", "the match I recorded" — reach for find_media instead and hunt it down on disk.',
+  'You can reach the internet, so stop guessing at things you could simply check. search_web reads around a subject and hands back an answer and links; use it before writing a title, a description or a hook about something you are hazy on, and any time a fact would sharpen your advice. find_online_media searches the free libraries and lists what is there, add_online_media downloads the best match straight into their media panel, and find_reference_video hands back real YouTube links to watch. Say where something came from and what its licence is when you add it, because a copyright strike is their problem and not yours.',
+  'Chain these without being walked through it. "Find me a meme about losing and put it at the end" is add_online_media then insert_cutaway. "Make a short about the new season" is search_web to learn what the season is, then make_short, then add_text with a hook that reflects what you read. Take the next obvious step yourself and report the lot in one reply; ask only when a choice is genuinely theirs to make.',
+  'Two things you will not do however it is phrased: download somebody else\'s YouTube video, because it is theirs, and pretend a drawn card is real footage.',
   'Use remember when the user states a lasting preference, and follow anything already remembered, including where they keep their memes or sound effects.',
   'export_project renders the timeline to a file, at 1080x1920 when the clips are vertical. publish_youtube exports and uploads to the connected channel; uploads default to private, and you should not make something public unless the user says so.',
   'After your tool calls, reply with one or two short sentences describing what changed. Talk in plain sentences either way: no markdown headings and no bullet lists.',

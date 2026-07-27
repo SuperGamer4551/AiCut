@@ -29,6 +29,9 @@ import { generateClip } from './generate'
 import type { MediaItem, TextOverlay, TimelineClip, Track } from '../src/lib/types'
 import type { UpdateState } from './updater'
 import { checkForUpdates, currentUpdateState, installUpdate, startUpdates, stopUpdates } from './updater'
+import type { DownloadReply, ReferenceReply, WebMediaReply, WebSearchReply } from './web'
+import { downloadMedia, findReferenceVideos, findWebMedia, searchWeb } from './web'
+import type { WebMediaKind } from '../src/lib/web/sources'
 import { systemFont } from './fonts'
 import type { PublicYoutubeAccount, YoutubeAccount } from './youtube'
 import {
@@ -348,6 +351,42 @@ ipcMain.handle(
   async (_event, request: GenerateRequest): Promise<GenerateReply> =>
     generateClip(app.getPath('userData'), request),
 )
+
+// --- The internet ----------------------------------------------------------
+// Searching and downloading happen here rather than in the page: the renderer's
+// content policy blocks remote requests, and a file that arrives as a path can
+// be imported through exactly the same road as one the user picked themselves.
+
+ipcMain.handle('web:search', (_event, query: string): Promise<WebSearchReply> => searchWeb(query))
+
+ipcMain.handle(
+  'web:media',
+  (_event, query: string, kind: WebMediaKind, limit?: number): Promise<WebMediaReply> =>
+    findWebMedia(query, kind, limit),
+)
+
+ipcMain.handle(
+  'web:videos',
+  (_event, query: string, limit?: number): Promise<ReferenceReply> => findReferenceVideos(query, limit),
+)
+
+ipcMain.handle(
+  'web:download',
+  (_event, url: string, name?: string): Promise<DownloadReply> =>
+    downloadMedia(app.getPath('userData'), url, name),
+)
+
+/** Opens a link in the real browser; the app itself never navigates away. */
+ipcMain.handle('web:open', async (_event, url: string): Promise<boolean> => {
+  try {
+    const address = new URL(url)
+    if (address.protocol !== 'http:' && address.protocol !== 'https:') return false
+    await shell.openExternal(address.toString())
+    return true
+  } catch {
+    return false
+  }
+})
 
 // --- Files on this computer ------------------------------------------------
 // Reads are limited to folder listings and media file names, which is all the

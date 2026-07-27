@@ -15,6 +15,10 @@ export const HOST_TOOLS: ToolName[] = [
   'punch_in',
   'make_montage',
   'generate_clip',
+  'search_web',
+  'find_online_media',
+  'add_online_media',
+  'find_reference_video',
   'export_project',
   'publish_youtube',
   'youtube_status',
@@ -137,6 +141,43 @@ async function callHost(call: ToolCall, host: HostBridge): Promise<HostReply> {
         look: args.look ?? args.style ?? args.theme,
         at: args.at ?? args.start,
       })
+
+    case 'search_web': {
+      const query = str(args.query ?? args.q ?? args.topic ?? args.subject)
+      if (!query) return refuse('Tell me what to look up.')
+      return host.searchWeb({ query })
+    }
+
+    case 'find_online_media': {
+      const query = str(args.query ?? args.q ?? args.subject ?? args.search)
+      if (!query) return refuse('Tell me what to search the internet for.')
+      return host.findOnlineMedia({
+        query,
+        kind: args.kind ?? args.type ?? args.media,
+        count: num(args.count ?? args.limit),
+      })
+    }
+
+    case 'add_online_media': {
+      const query = str(args.query ?? args.q ?? args.subject ?? args.search)
+      const url = str(args.url ?? args.link ?? args.href)
+      const choice = num(args.choice ?? args.index ?? args.pick)
+      if (!query && !url && choice === undefined) {
+        return refuse('Tell me what to find online, or which of the results to take.')
+      }
+      return host.addOnlineMedia({
+        query,
+        url,
+        choice,
+        kind: args.kind ?? args.type ?? args.media,
+      })
+    }
+
+    case 'find_reference_video': {
+      const query = str(args.query ?? args.q ?? args.subject ?? args.topic)
+      if (!query) return refuse('Tell me what the reference video should show.')
+      return host.findReferenceVideo({ query, count: num(args.count ?? args.limit) })
+    }
 
     case 'export_project':
       return host.exportProject({

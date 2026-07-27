@@ -127,6 +127,20 @@ The assistant can list folders, search for media by name, and import specific pa
 
 Folders can be named the way you would say them — `find my fortnite clip in my documents folder`, `what is in my downloads` — including the OneDrive copies of Documents, Desktop and Pictures that Windows redirects to. If a named folder turns up nothing, the search widens to the usual places and says where it looked.
 
+### The internet
+
+The assistant can go and get things, and it does the fetching in the main process because the page itself is not allowed to make remote requests.
+
+- **`find me a meme about losing`** searches the free libraries, downloads the best match into the media panel and tells you where it came from. The same works for the rest: `get some rain footage`, `find a swoosh sound effect`, `download a picture of a golden retriever`. `find me some options for cat gifs` lists them instead so you can pick one, then `add the second one`.
+- **`look up the new fortnite season`** reads around a subject and answers with what it found and the articles to follow, rather than guessing. The model is told to do this before writing a title, a description or a hook about something it is unsure of.
+- **`show me examples of good gaming montages`** hands back real YouTube links. Links in the chat are clickable and open in your own browser.
+
+Downloads land in the app's own `downloads` folder, capped at 300 MB each, and only if the file turns out to be video, audio or a picture.
+
+Sources are limited to ones that publish a licence — [Openverse](https://openverse.org), [Wikimedia Commons](https://commons.wikimedia.org), the [Internet Archive](https://archive.org) and Imgflip's meme templates — and the licence is quoted every time something is added, because a copyright strike on your channel is a worse outcome than a missing meme. None of them need an account or a key. Somebody else's YouTube video is theirs, so it is linked and never downloaded.
+
+Anything that mentions your own machine still goes to the disk instead: `find my fortnite clips` searches your folders, and `add the bruh meme at 0:12` uses the file you already keep.
+
 ### What it remembers
 
 Standing preferences are learned from ordinary messages — `always crop to 9:16`, `never make anything public`, `"my intro" means intro_take3.mp4` — and kept across sessions. Remembered notes are shown in the Assistant settings, are handed to the model each turn, and are honoured by the built-in commands too: with the note above, a bare "crop it" gives you 9:16. Say `forget the 9:16 thing` or `forget everything` to clear them.
@@ -162,6 +176,7 @@ Logic lives in small modules with a matching suite, all run by `npm run check`:
 | --- | --- |
 | `check:timeline` | snapping, collisions, track rules, crop maths |
 | `check:agent` | tool runtime, plain-language commands, memory, the host bridge, text, memes, punch-ins, montages |
+| `check:web` | reading each library's reply, naming a download, routing a request to the internet rather than the disk, links in a reply |
 | `check:ai` | model transport, settings storage, reply parsing |
 | `check:export` | the ffmpeg command built from a timeline, text and inset filters, font discovery, progress parsing |
 | `check:files` | folder names, folder listing and bounded search |

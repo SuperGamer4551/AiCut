@@ -251,6 +251,82 @@ export function cutawayMention(input: string): string | null {
   return after ? after[1].trim() : null
 }
 
+/** Phrasings that plainly mean "go and read the internet", not "search my disk". */
+const RESEARCH =
+  /\b(?:search|look)\s+(?:the\s+)?(?:web|internet|online)\b|\bsearch online\b|\bgoogle\b|\blook (?:it )?up\b|\bresearch\b|\bread up on\b|\bfind out\b|\blatest news\b|\bwhat(?:'s| is) (?:the )?(?:latest|new)\b/
+
+/** Asking to be pointed at something to watch, rather than to be given a file. */
+const REFERENCE =
+  /\b(?:reference|examples?|inspiration|inspo|tutorial|walkthrough|how others?|other creators?|similar videos?)\b/
+
+/**
+ * Verbs that mean "go and get me one". "add" and "put" are deliberately absent:
+ * "add the bruh meme at 0:12" is about a file they already keep somewhere, and
+ * that still belongs to the disk unless the internet is named outright.
+ */
+const FETCH_VERB = /\b(?:find|get|grab|download|fetch|search|source|pull|show me|give me|bring me)\b/
+
+const ONLINE_WORDS = /\b(?:online|internet|the web|off the web|web)\b/
+
+const MEDIA_PANEL = /\bmedia\s+(?:section|panel|library|bin|list)\b/
+
+const WEB_STOP = new Set([
+  'me', 'us', 'a', 'an', 'the', 'some', 'any', 'few', 'my', 'please', 'thanks',
+  'meme', 'memes', 'gif', 'gifs', 'sticker', 'stickers', 'reaction', 'image', 'images',
+  'picture', 'pictures', 'photo', 'photos', 'wallpaper', 'video', 'videos', 'footage',
+  'clip', 'clips', 'sound', 'sounds', 'effect', 'effects', 'sfx', 'music', 'song', 'audio',
+  'stock', 'broll', 'online', 'internet', 'web', 'good', 'nice', 'cool', 'funny',
+  'and', 'of', 'for', 'about', 'to', 'into', 'section', 'panel', 'library',
+  'options', 'choices', 'list', 'browse', 'see', 'there', 'something', 'anything',
+  // Pointing at what is already open is not a subject to search for: "the best
+  // part of this clip" is an edit, and leaving nothing behind here is what
+  // stops it being read as one.
+  'this', 'that', 'these', 'those', 'it', 'its', 'one', 'ones', 'here', 'mine', 'ours',
+])
+
+/** Which library to search, read off whatever noun the request used. */
+export function onlineKind(input: string): 'image' | 'video' | 'gif' | 'audio' | 'meme' | null {
+  const lower = input.toLowerCase()
+
+  if (/\bgifs?\b/.test(lower)) return 'gif'
+  if (/\b(?:meme|memes|reaction|sticker)\b/.test(lower)) return 'meme'
+  if (/\b(?:sound|sounds|sfx|sound effects?|music|song|audio|track|jingle)\b/.test(lower)) return 'audio'
+  if (/\b(?:footage|b.?roll|video|videos|clip|clips|movie)\b/.test(lower)) return 'video'
+  if (/\b(?:image|images|picture|pictures|photo|photos|wallpaper|background|art|logo|icon)\b/.test(lower)) {
+    return 'image'
+  }
+
+  return null
+}
+
+/** What a web request is actually about, once the asking has been stripped off. */
+export function webSubject(input: string): string | null {
+  const quoted = /"([^"]+)"|'([^']+)'/.exec(input)
+  if (quoted) return (quoted[1] ?? quoted[2]).trim() || null
+
+  const about = /\b(?:of|about|showing|featuring|involving|with)\s+(.+)$/i.exec(input.trim())
+  const asked =
+    /\b(?:find|get|grab|download|fetch|search for|search|look up|look for|google|research|read up on|show me|give me|bring me|need|want|add|put)\b\s*(.+)$/i.exec(
+      input.trim(),
+    )
+
+  const tail = about?.[1] ?? asked?.[1]
+  if (!tail) return null
+
+  const cleaned = tail
+    .replace(/\b(?:on|from|in|off|to|into)\s+(?:the\s+|my\s+)?(?:internet|web|google|online|media\s+\w+)\b/gi, ' ')
+    // Where it goes and how long it lasts are instructions, not part of the search.
+    .replace(/\s+\b(?:at|around|near)\s+(?:the\s+)?(?:start|end|beginning|playhead|\d[\d:.]*\s*(?:s|sec|seconds?)?)\b.*$/i, '')
+    .replace(/\s+\bfor\s+\d+(?:\.\d+)?\s*(?:s|sec|seconds?)\b.*$/i, '')
+    .replace(/[?.!]+$/, '')
+    .trim()
+
+  const words = cleaned.split(/\s+/).filter((word) => word.length > 0 && !WEB_STOP.has(word.toLowerCase()))
+  const term = words.join(' ').trim()
+
+  return term.length > 1 ? term : null
+}
+
 function ratioMention(input: string): string | null {
   const lower = input.toLowerCase()
   const key = Object.keys(RATIO_WORDS).find((word) => lower.includes(word))
@@ -423,6 +499,37 @@ export function interpretCommand(input: string, state: ProjectState): Interpreta
 
   const learned = learnFrom(raw)
   if (learned) return call('remember', { text: learned })
+
+  // The internet, before anything that would send the same words to the disk.
+  // "find me a meme about losing" is a download, not a hunt through Documents.
+
+  if (asks(RESEARCH) && !asks(/\bmy (?:files|folder|computer|pc|drive|documents|videos)\b/)) {
+    return call('search_web', { query: webSubject(raw) ?? raw.replace(/[?.!]+$/, '') })
+  }
+
+  if (asks(REFERENCE) || (asks(/\b(?:link|links)\b/) && asks(/\bvideos?\b/))) {
+    const subject = webSubject(raw)
+    if (subject) return call('find_reference_video', { query: subject })
+  }
+
+  const wantsOnline = onlineKind(raw)
+  // Anything pointing at their own machine keeps this on the disk.
+  const theirOwn = asks(/\bmy\b/) || folderMention(raw) !== null || filePathMention(raw) !== null
+  if (
+    wantsOnline &&
+    !asks(CARD_NOUN) &&
+    !OWN_FOOTAGE.test(raw) &&
+    (asks(ONLINE_WORDS) || asks(MEDIA_PANEL) || (asks(FETCH_VERB) && !theirOwn))
+  ) {
+    const subject = webSubject(raw)
+    // A bare "add the meme" means one they already have; only a subject to
+    // search for makes this a download.
+    if (subject) {
+      // Listing without taking is what "show me some options" asks for.
+      const browsing = asks(/\b(?:options|choices|what(?:'s| is) (?:out )?there|list|browse|see what)\b/)
+      return call(browsing ? 'find_online_media' : 'add_online_media', { query: subject, kind: wantsOnline })
+    }
+  }
 
   // Making something out of nothing. A card is the only thing that can be drawn,
   // so asking for "a video about fortnite" draws one about Fortnite rather than

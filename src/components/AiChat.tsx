@@ -16,6 +16,7 @@ import { learnFrom, memoryPrompt } from '../lib/agent/memory'
 import { MODEL_PRESETS, canReachModel, presetFor } from '../lib/agent/endpoints'
 import { EMPTY_TRANSCRIPT, TRANSCRIPT_STORAGE_KEY, forStorage, normalizeTranscript } from '../lib/agent/transcript'
 import { readStored, writeStored } from '../lib/layout'
+import { linkLabel, splitLinks } from '../lib/links'
 import './AiChat.css'
 
 type Props = {
@@ -30,15 +31,21 @@ type Settings = {
   hasKey: boolean
 }
 
-const MAX_ROUNDS = 5
+/**
+ * How many times the model may act, look at what happened, and act again.
+ * Researching before editing turns one request into a longer chain — look it
+ * up, fetch the meme, place it, add the hook — so there is room for that.
+ */
+const MAX_ROUNDS = 9
 
 /** How long a reply may take before there is a way to give up on it. */
 const STOP_AFTER_MS = 10_000
 
 const SUGGESTIONS = [
   'Make this into a YouTube short',
-  'Find the best 20 seconds',
+  'Find me a meme about losing',
   'Cut the dead air out of this',
+  'Show me examples of good gaming montages',
   'Generate a 3 second intro that says Highlights',
   'Export this as a 1080p mp4',
 ]
@@ -83,6 +90,35 @@ function spokenReply(content: string, performed: ChatAction[]): string {
   if (performed.length > 0) return performed.map((action) => action.summary).join(' ')
 
   return 'The model came back with nothing at all, and nothing changed. Ask again, or put it another way.'
+}
+
+/**
+ * Message text with any addresses in it made clickable. They open in the real
+ * browser, because a window showing YouTube is not an editor any more.
+ */
+function Linked({ text }: { text: string }) {
+  return (
+    <>
+      {splitLinks(text).map((part, index) =>
+        part.kind === 'link' ? (
+          <a
+            key={index}
+            className="ai-link"
+            href={part.value}
+            title={part.value}
+            onClick={(event) => {
+              event.preventDefault()
+              void window.aicut?.web?.open(part.value)
+            }}
+          >
+            {linkLabel(part.value)}
+          </a>
+        ) : (
+          <span key={index}>{part.value}</span>
+        ),
+      )}
+    </>
+  )
 }
 
 export function AiChat({ project, describeProject, onRunTools }: Props) {
@@ -659,12 +695,18 @@ export function AiChat({ project, describeProject, onRunTools }: Props) {
 
         {messages.map((message) => (
           <div key={message.id} className={`ai-message role-${message.role}`}>
-            {message.text && <div className="ai-bubble">{message.text}</div>}
+            {message.text && (
+              <div className="ai-bubble">
+                <Linked text={message.text} />
+              </div>
+            )}
 
             {message.actions?.map((action, index) => (
               <div key={`${action.name}-${index}`} className={`ai-action${action.failed ? ' is-failed' : ''}`}>
                 <span className="ai-action-name">{action.name.replace(/_/g, ' ')}</span>
-                <span className="ai-action-summary">{action.summary}</span>
+                <span className="ai-action-summary">
+                  <Linked text={action.summary} />
+                </span>
               </div>
             ))}
 

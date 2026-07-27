@@ -99,6 +99,37 @@ type UpdateState = {
   message?: string
 }
 
+type BrowseKind = 'image' | 'video' | 'gif' | 'audio' | 'meme'
+
+type BrowseResult = {
+  title: string
+  url: string
+  pageUrl: string
+  source: string
+  license: string
+  author?: string
+  extension: string
+  kind: 'video' | 'audio' | 'image'
+  width?: number
+  height?: number
+  duration?: number
+  size?: number
+}
+
+type BrowseArticle = {
+  title: string
+  summary: string
+  url: string
+  source: string
+}
+
+type BrowseVideo = {
+  title: string
+  url: string
+  channel: string
+  length?: string
+}
+
 declare global {
   interface Window {
     aicut?: {
@@ -124,6 +155,25 @@ declare global {
           aspect?: number | string
           look?: string
         }) => Promise<GeneratedClip | { error: string }>
+      }
+      web: {
+        search: (
+          query: string,
+        ) => Promise<{ query: string; answer: string; articles: BrowseArticle[] } | { error: string }>
+        media: (
+          query: string,
+          kind: BrowseKind,
+          limit?: number,
+        ) => Promise<{ query: string; kind: BrowseKind; results: BrowseResult[] } | { error: string }>
+        videos: (
+          query: string,
+          limit?: number,
+        ) => Promise<{ query: string; videos: BrowseVideo[]; searchUrl: string } | { error: string }>
+        download: (
+          url: string,
+          name?: string,
+        ) => Promise<{ path: string; name: string; size: number } | { error: string }>
+        open: (url: string) => Promise<boolean>
       }
       updates: {
         state: () => Promise<UpdateState>
