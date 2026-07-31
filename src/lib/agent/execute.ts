@@ -23,6 +23,7 @@ export const HOST_TOOLS: ToolName[] = [
   'export_project',
   'publish_youtube',
   'youtube_status',
+  'check_copyright',
 ]
 
 export function isHostTool(name: ToolName): boolean {
@@ -208,6 +209,9 @@ async function callHost(call: ToolCall, host: HostBridge): Promise<HostReply> {
 
     case 'youtube_status':
       return host.youtubeStatus()
+
+    case 'check_copyright':
+      return host.checkCopyright()
 
     default:
       return refuse(`"${String(call.name)}" is not a host tool.`)

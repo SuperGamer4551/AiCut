@@ -1,5 +1,20 @@
 export type MediaKind = 'video' | 'audio' | 'image'
 
+/**
+ * Where a file came from. Worth keeping rather than discarding at import,
+ * because whether something is yours is the whole question when you are asking
+ * what in a video might get claimed.
+ */
+export type Origin =
+  /** Picked off this computer. Whose it is originally, only you know. */
+  | { from: 'local' }
+  /** Drawn by the app itself, so nobody else has a claim on it. */
+  | { from: 'generated' }
+  /** Pulled off someone's YouTube channel. */
+  | { from: 'youtube'; channel: string; title: string; url: string }
+  /** From one of the openly licensed libraries, which carry terms. */
+  | { from: 'library'; source: string; license: string; author?: string; pageUrl?: string }
+
 export type MediaItem = {
   id: string
   name: string
@@ -15,6 +30,8 @@ export type MediaItem = {
   /** True until metadata has been read off the file. */
   loading: boolean
   error?: string
+  /** Absent on anything imported before the app started recording this. */
+  origin?: Origin
 }
 
 export type TrackKind = 'video' | 'audio'
@@ -59,6 +76,8 @@ export type TimelineClip = {
   color: string
   crop?: Crop
   frame?: Frame
+  /** Silenced, so the picture is kept without whatever was playing over it. */
+  muted?: boolean
 }
 
 export function clipOffset(clip: TimelineClip): number {

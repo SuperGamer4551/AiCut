@@ -15,6 +15,19 @@ export type Release = {
 
 export const RELEASES: Release[] = [
   {
+    version: '1.0.0',
+    date: '2026-07-31',
+    title: 'Your work gets kept, and you can ask what might get claimed',
+    changes: [
+      'Projects are saved. Everything you did used to disappear the moment the window closed; now the app opens on a dashboard of what you have been working on, and picks up where you left off.',
+      'A project is a short, a full video or a mini-movie, and the choice sets the shape of the frame, the tracks you start with and what an export defaults to. You can rename one from the dashboard or from the title while you are editing.',
+      'A Copyright button in the toolbar goes through the timeline and tells you what could get claimed, based on where each file came from — which channel a download came off, or which library and under what licence.',
+      'It offers real fixes rather than tricks: muting borrowed footage, taking it out, or crediting the author where the licence asks for it. Each one shows you exactly what it would change before it changes anything.',
+      'Mirroring, cropping and keeping cuts short are not offered, because they do not work. Content ID normalises all of that before it compares, and no length of someone else\'s work is automatically safe.',
+      'You can also just ask the assistant "will this get claimed" and get the same answer in the chat.',
+    ],
+  },
+  {
     version: '0.10.1',
     date: '2026-07-27',
     title: 'You can ask it to check for updates',

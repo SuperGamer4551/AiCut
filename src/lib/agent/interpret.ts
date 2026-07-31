@@ -517,6 +517,17 @@ export function interpretCommand(input: string, state: ProjectState): Interpreta
   const blocked = UNSUPPORTED.find(({ pattern }) => pattern.test(lower))
   if (blocked) return { calls: [], unsupported: blocked.label }
 
+  // "Will this get claimed" is phrased as a question but cannot be answered
+  // without looking at the timeline, so it is caught before the question guard
+  // below. With nothing on the timeline there is nothing to look at, and it
+  // falls through to be answered in general terms instead.
+  if (
+    state.clips.length > 0 &&
+    asks(/\b(copyright|content ?id|claim(ed|s)?|strike[sd]?|flagged|demoneti[sz]\w*|dmca)\b/)
+  ) {
+    return call('check_copyright')
+  }
+
   // "How do I make a short" is a question about the editor, not an instruction to
   // cut one. Questions go back unhandled so the conversation can answer them.
   if (ASKING.test(raw)) return NOTHING

@@ -74,6 +74,10 @@ export type FetchedVideo =
 
 export type FetchProgress = { phase: 'tool' | 'download' | 'done' | 'failed'; fraction: number; what: string }
 
+export type ProjectsReply = { projects: unknown[] } | { error: string }
+export type ProjectReply = { project: unknown } | { error: string }
+export type SavedReply = { ok: true } | { error: string }
+
 export type MediaRoot = { name: string; path: string }
 
 export type FolderEntry = {
@@ -224,6 +228,17 @@ const api = {
 
     /** Hands a link to the system browser. */
     open: (url: string): Promise<boolean> => ipcRenderer.invoke('web:open', url),
+  },
+
+  projects: {
+    /** Enough about each saved project to draw the dashboard. */
+    list: (): Promise<ProjectsReply> => ipcRenderer.invoke('projects:list'),
+
+    load: (id: string): Promise<ProjectReply> => ipcRenderer.invoke('projects:load', id),
+
+    save: (project: unknown): Promise<SavedReply> => ipcRenderer.invoke('projects:save', project),
+
+    remove: (id: string): Promise<SavedReply> => ipcRenderer.invoke('projects:delete', id),
   },
 
   updates: {

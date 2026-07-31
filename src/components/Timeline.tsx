@@ -600,6 +600,11 @@ export function Timeline({
                             <span className="clip-footer">
                               <span className="clip-duration">{formatTime(clip.duration)}</span>
                               {isCropped(clip.crop) && <span className="clip-badge">crop</span>}
+                              {clip.muted && (
+                                <span className="clip-badge" title="Silenced, so only the picture is used">
+                                  muted
+                                </span>
+                              )}
                               {clip.frame && (
                                 <span className="clip-badge" title={describeFrame(clip.frame)}>
                                   inset

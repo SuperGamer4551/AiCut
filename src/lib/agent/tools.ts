@@ -478,6 +478,16 @@ export const TOOL_SPECS: ToolSpec[] = [
     parameters: { type: 'object', properties: {} },
   },
   {
+    name: 'check_copyright',
+    description:
+      'Look over the timeline for anything that could draw a copyright claim or strike on YouTube, based on ' +
+      'where each file came from, and report what could be done about it. Use this whenever the user asks ' +
+      'whether their video is safe to upload, will get flagged, claimed, struck, or demonetised. Never ' +
+      'suggest mirroring, cropping, changing the speed or keeping clips short as a way around Content ID: ' +
+      'none of it works, and no length of someone else\'s work is automatically safe.',
+    parameters: { type: 'object', properties: {} },
+  },
+  {
     name: 'publish_youtube',
     description:
       'Export the timeline and upload it to the connected YouTube channel. Uploads are private unless the user asks otherwise.',

@@ -184,8 +184,18 @@ const TOPICS: Topic[] = [
       'Say "add a hook saying \'wait for it\'" or "add a caption at the bottom saying clip 1 of 3". There are three looks: meme is heavy white text at the top, title is large in the middle, caption sits along the bottom. It shows in the preview and is burned into the export. Captions written from speech are not in yet.',
   },
   {
+    // Ahead of the internet topic, which also talks about licences but means
+    // where to find free footage rather than what might get claimed. Only
+    // reached with an empty timeline; with clips on it the interpreter runs the
+    // real check instead of talking in generalities.
+    id: 'copyright',
+    test: /\b(?:copyright|content ?id|claim(?:ed|s)?|strike[sd]?|flagged|demoneti[sz]\w*|dmca|fair use)\b/,
+    answer: () =>
+      'Put something on the timeline and press Copyright in the toolbar, or ask me again, and I will go through it clip by clip. What I go on is where each file came from, so anything I download for you is tagged with the channel or the licence it came under. The short version: music is what gets claimed most, your own footage is safe unless something copyrighted is playing in it, and openly licensed material is fine though some of it wants a credit and some forbids monetised use. Mirroring, cropping, changing the speed or keeping cuts short do not work — Content ID normalises all of that, and no length of someone else\'s work is automatically safe. The only certain answer comes from uploading unlisted and reading the Copyright tab in YouTube Studio.',
+  },
+  {
     id: 'internet',
-    test: /\b(?:internet|online|the web|search the web|google|browse|download|stock footage|b.?roll|copyright|licen[sc]e|royalty.?free|creative commons)\b/,
+    test: /\b(?:internet|online|the web|search the web|google|browse|download|stock footage|b.?roll|licen[sc]e|royalty.?free|creative commons)\b/,
     answer: () =>
       'I can go and get things. "Find me a meme about losing" downloads one into your media panel, and the same works for footage, pictures, gifs and sound effects — "get some rain footage", "find a swoosh sound". Those come from libraries that state a licence, so they are yours to publish and I tell you the licence each time. Gameplay and montages are not in those libraries, so for those I go to YouTube: "get me a fortnite montage from youtube" downloads the whole video for you to cut up, and "show me examples of good gaming montages" hands back links to watch instead. A video off someone\'s channel is theirs, though — fine to study, but leaving any of it in your own upload risks a Content ID claim, usually on the music, and no clip is short enough to be exempt from that.',
   },

@@ -121,6 +121,23 @@ export function supportedFiles(files: File[]): File[] {
   return files.filter((file) => isSupported(file.name, file.type))
 }
 
+/**
+ * Points a saved library entry back at its file. The url in the file is from
+ * the run that saved it, and a blob url from a browser import cannot be
+ * revived at all — that entry says so rather than failing silently later.
+ */
+export function restoreItem(item: MediaItem): MediaItem {
+  if (!item.path) {
+    return { ...item, loading: false, error: 'This file was not imported from disk, so it could not be reopened' }
+  }
+
+  return {
+    ...item,
+    url: window.aicut?.toMediaUrl(item.path) ?? `file://${item.path}`,
+    loading: false,
+  }
+}
+
 export function releaseItem(item: MediaItem): void {
   if (item.url.startsWith('blob:')) URL.revokeObjectURL(item.url)
 }

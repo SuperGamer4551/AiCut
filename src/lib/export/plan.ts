@@ -264,7 +264,13 @@ export function buildExportPlan(input: {
       clip,
       item,
       index: index++,
-      hasAudio: clip.kind === 'audio' ? (probe?.hasAudio ?? true) : (probe?.hasAudio ?? false),
+      // A muted clip still draws its picture; it just contributes no sound,
+      // which is how third-party footage is kept without its soundtrack.
+      hasAudio: clip.muted
+        ? false
+        : clip.kind === 'audio'
+          ? (probe?.hasAudio ?? true)
+          : (probe?.hasAudio ?? false),
     })
   }
 

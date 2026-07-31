@@ -12,9 +12,20 @@
   display: flex;
   align-items: center;
   gap: 10px;
+  max-width: 300px;
+}
+
+.brand-back {
+  flex: none;
+  padding: 0;
+  border: none;
+  border-radius: 10px;
+  background: none;
+  line-height: 0;
 }
 
 .brand-mark {
+  display: block;
   width: 30px;
   height: 30px;
   border-radius: 10px;
@@ -24,12 +35,61 @@
     0 6px 18px rgba(var(--accent-rgb), 0.28);
 }
 
+/* An arrow on hover, so the mark reads as the way back rather than decoration. */
+.brand-back:hover .brand-mark {
+  position: relative;
+  background: linear-gradient(140deg, var(--accent) 0%, #35c9c0 100%);
+}
+
+.brand-back:hover .brand-mark::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  margin: auto;
+  width: 8px;
+  height: 8px;
+  border-left: 2px solid var(--on-accent);
+  border-bottom: 2px solid var(--on-accent);
+  transform: rotate(45deg) translate(1px, -1px);
+}
+
+.brand-text {
+  min-width: 0;
+}
+
 .brand-name {
+  display: block;
+  max-width: 100%;
+  padding: 1px 6px;
+  margin-left: -6px;
+  border: 1px solid transparent;
+  border-radius: var(--radius-xs);
+  background: none;
+  color: var(--text);
   font-family: var(--font-display);
   font-size: 16px;
   font-weight: 600;
   letter-spacing: -0.01em;
   line-height: 1.15;
+  text-align: left;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  transition:
+    border-color var(--speed) var(--ease),
+    background var(--speed) var(--ease);
+}
+
+button.brand-name:hover {
+  border-color: var(--border);
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.brand-name-field {
+  width: 220px;
+  border-color: rgba(var(--accent-rgb), 0.55);
+  background: var(--bg-panel);
+  outline: none;
 }
 
 .brand-sub {

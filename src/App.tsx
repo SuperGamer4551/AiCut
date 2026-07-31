@@ -4,6 +4,7 @@ import type {
   Crop,
   DragMedia,
   MediaItem,
+  Origin,
   TextOverlay,
   TimelineClip,
   Track,
@@ -11,9 +12,10 @@ import type {
 } from './lib/types'
 import { CLIP_COLORS, SUPPORTED_EXTENSIONS, stripExtension } from './lib/types'
 import { DEFAULT_TEXT_SECONDS, cleanText } from './lib/overlay'
-import { itemFromFile, itemFromPath, probeMedia, releaseItem, supportedFiles } from './lib/media'
+import { itemFromFile, itemFromPath, probeMedia, releaseItem, restoreItem, supportedFiles } from './lib/media'
+import type { ProjectDocument } from './lib/project'
+import { KIND_PRESETS } from './lib/project'
 import {
-  INITIAL_TRACKS,
   addTrack as addTrackTo,
   clampZoom,
   defaultTrackId,
@@ -52,6 +54,7 @@ import { Timeline } from './components/Timeline'
 import { AiChat } from './components/AiChat'
 import { Splitter } from './components/Splitter'
 import { StatusBar } from './components/StatusBar'
+import { CopyrightCheck } from './components/CopyrightCheck'
 import './App.css'
 
 const ACCEPT = SUPPORTED_EXTENSIONS.map((ext) => `.${ext}`).join(',')
@@ -64,20 +67,32 @@ type PanelDrag = {
   moved: boolean
 }
 
-export default function App() {
-  const [media, setMedia] = useState<MediaItem[]>([])
-  const [clips, setClips] = useState<TimelineClip[]>([])
+type AppProps = {
+  /** The project this editor is showing. Mounted fresh per project. */
+  project: ProjectDocument
+  saved: boolean
+  onChange: (project: ProjectDocument) => void
+  onLeave: () => void
+}
+
+export default function App({ project, saved, onChange, onLeave }: AppProps) {
+  const [media, setMedia] = useState<MediaItem[]>(() => project.media.map(restoreItem))
+  const [clips, setClips] = useState<TimelineClip[]>(project.clips)
   const [selectedMediaId, setSelectedMediaId] = useState<string | null>(null)
-  const [playhead, setPlayhead] = useState(0)
+  const [playhead, setPlayhead] = useState(project.playhead)
   const [playing, setPlaying] = useState(false)
-  const [zoom, setZoom] = useState(24)
+  const [zoom, setZoom] = useState(project.zoom)
   const [dragging, setDragging] = useState(false)
   const [notice, setNotice] = useState<string | null>(null)
   const [dragMedia, setDragMedia] = useState<DragMedia | null>(null)
   const [selectedClipId, setSelectedClipId] = useState<string | null>(null)
-  const [tracks, setTracks] = useState<Track[]>(INITIAL_TRACKS)
-  const [overlays, setOverlays] = useState<TextOverlay[]>([])
+  const [tracks, setTracks] = useState<Track[]>(project.tracks)
+  const [overlays, setOverlays] = useState<TextOverlay[]>(project.overlays)
+  // The name lives here rather than being read back off the prop, so that a
+  // rename is not undone by the next edit saving the name it opened with.
+  const [name, setName] = useState(project.name)
   const [cropMode, setCropMode] = useState(false)
+  const [checkingCopyright, setCheckingCopyright] = useState(false)
   const [layout, setLayout] = useState<Layout>(() =>
     readStored(LAYOUT_STORAGE_KEY, normalizeLayout),
   )
@@ -109,6 +124,43 @@ export default function App() {
   const panelDragRef = useRef<PanelDrag | null>(null)
 
   projectRef.current = { media, clips, tracks, overlays, playhead, zoom, selectedClipId, memory }
+
+  // Where the playhead sits is worth reopening on, but it moves thirty times a
+  // second while playing, so it rides along with the next real edit rather than
+  // triggering saves of its own.
+  const playheadRef = useRef(playhead)
+  playheadRef.current = playhead
+
+  // Opening a project is not editing it, so what this mounted with is not
+  // written straight back — otherwise looking at something would reorder the
+  // dashboard and touch the file for nothing. Comparing against the state as it
+  // opened, rather than counting runs, is what makes that hold even when React
+  // mounts this twice, as it does in development.
+  const lastSaved = useRef<string | null>(null)
+
+  useEffect(() => {
+    const next = {
+      ...project,
+      name,
+      media,
+      clips,
+      tracks,
+      overlays,
+      zoom,
+      playhead: playheadRef.current,
+      modified: Date.now(),
+    }
+
+    // Neither the clock nor the playhead counts as an edit worth a save.
+    const fingerprint = JSON.stringify({ ...next, modified: 0, playhead: 0 })
+    if (lastSaved.current === fingerprint) return
+
+    const opening = lastSaved.current === null
+    lastSaved.current = fingerprint
+    if (opening) return
+
+    onChange(next)
+  }, [project, name, media, clips, tracks, overlays, zoom, onChange])
 
   const selectedClip = useMemo(
     () => clips.find((clip) => clip.id === selectedClipId) ?? null,
@@ -358,7 +410,7 @@ export default function App() {
 
   /** Import by absolute path, which is how the assistant brings in files it found. */
   const importPaths = useCallback(
-    async (paths: string[]): Promise<{ items: MediaItem[]; failed: string[] }> => {
+    async (paths: string[], origin: Origin = { from: 'local' }): Promise<{ items: MediaItem[]; failed: string[] }> => {
       const desktop = window.aicut
       if (!desktop?.statFile) return { items: [], failed: paths }
 
@@ -371,7 +423,7 @@ export default function App() {
           failed.push(target)
           continue
         }
-        candidates.push(itemFromPath(info.path, info.size))
+        candidates.push({ ...itemFromPath(info.path, info.size), origin })
       }
 
       const items = await addItems(candidates)
@@ -412,8 +464,9 @@ export default function App() {
         importPaths,
         desktop: window.aicut,
         notify: setNotice,
+        project: { kind: project.kind, resolution: KIND_PRESETS[project.kind].resolution },
       }),
-    [importFromDialog, importPaths],
+    [importFromDialog, importPaths, project.kind],
   )
 
   useEffect(() => writeStored(MEMORY_STORAGE_KEY, memory), [memory])
@@ -714,6 +767,7 @@ export default function App() {
     ai: (
       <AiChat
         project={projectRef.current}
+        projectId={project.id}
         describeProject={describeProject}
         onRunTools={runToolCalls}
       />
@@ -751,11 +805,16 @@ export default function App() {
         playhead={playhead}
         duration={previewDuration}
         progress={progress}
+        project={{ name, kind: KIND_PRESETS[project.kind].label }}
+        saved={saved}
+        onLeave={onLeave}
+        onRename={setName}
         canExport={clips.length > 0}
         onTogglePlay={() => setPlaying((p) => !p)}
         onImport={importFromDialog}
         onAddToTimeline={addSelectedToTimeline}
         onResetLayout={resetLayout}
+        onCheckCopyright={() => setCheckingCopyright(true)}
         onExport={() => void exportProject()}
         canPlay={Boolean(previewMedia)}
         canAdd={Boolean(
@@ -812,6 +871,18 @@ export default function App() {
         <div className="panel-ghost" style={{ left: panelDrag.x, top: panelDrag.y }}>
           {PANEL_TITLES[panelDrag.panel]}
         </div>
+      )}
+
+      {checkingCopyright && (
+        <CopyrightCheck
+          clips={clips}
+          media={media}
+          onApply={(next) => {
+            setClips(next)
+            setNotice('Applied the copyright fix')
+          }}
+          onClose={() => setCheckingCopyright(false)}
+        />
       )}
 
       <input

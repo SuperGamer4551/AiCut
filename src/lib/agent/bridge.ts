@@ -1,4 +1,4 @@
-import type { MediaItem, TimelineClip, Track } from '../types'
+import type { MediaItem, Origin, TimelineClip, Track } from '../types'
 import { baseName, clipOffset, formatSize, stripExtension } from '../types'
 import { extensionFor, formatFor } from '../export/plan'
 import type { ClipMeasurement } from '../analyze/highlights'
@@ -8,6 +8,8 @@ import type { ReferenceVideo, WebMediaResult } from '../web/sources'
 import { readMediaKind } from '../web/sources'
 import { addTrackAtTop, defaultTrackId } from '../timeline'
 import { learnedDefaults } from './memory'
+import type { ProjectKind } from '../project'
+import { checkCopyright as runCopyrightCheck } from '../copyright'
 import {
   addClipFor,
   cropToAspect,
@@ -40,10 +42,15 @@ export type BridgeDeps = {
   applyState: (next: ProjectState) => void
   /** Opens the native picker; resolves with whatever was imported. */
   importDialog: () => Promise<MediaItem[]>
-  importPaths: (paths: string[]) => Promise<{ items: MediaItem[]; failed: string[] }>
+  importPaths: (paths: string[], origin?: Origin) => Promise<{ items: MediaItem[]; failed: string[] }>
   desktop?: DesktopApi
   /** Shown as a toast in the app, for progress the chat does not cover. */
   notify?: (text: string) => void
+  /**
+   * What the open project is for. A short renders vertical without being asked;
+   * anything explicit still wins over it.
+   */
+  project?: { kind: ProjectKind; resolution: string }
 }
 
 /** A Short has to be vertical and short; YouTube's own limit is a minute. */
@@ -384,11 +391,19 @@ export function createHostBridge(deps: BridgeDeps): HostBridge {
     const saved = await desktop.web.youtube(link)
     if ('error' in saved) return fail(saved.error)
 
-    const imported = await deps.importPaths([saved.path])
+    const from = saved.channel || picked?.channel || 'another channel'
+
+    // Whose video this is gets remembered, so a copyright check later can say
+    // so rather than guess from the file name.
+    const imported = await deps.importPaths([saved.path], {
+      from: 'youtube',
+      channel: from,
+      title: saved.title || picked?.title || saved.name,
+      url: link,
+    })
     const item = imported.items[0]
     if (!item) return fail(`I downloaded ${saved.name} but could not read it back in.`)
 
-    const from = saved.channel || picked?.channel || 'another channel'
     const length = saved.duration > 0 ? `, ${clock(saved.duration)} long` : ''
     const chose = picked && query ? ` It was the top hit for "${query}".` : ''
 
@@ -824,7 +839,7 @@ export function createHostBridge(deps: BridgeDeps): HostBridge {
 
       if ('error' in made) return fail(`I could not render that: ${made.error}`)
 
-      const imported = await deps.importPaths([made.path])
+      const imported = await deps.importPaths([made.path], { from: 'generated' })
       const item = imported.items[0]
       if (!item) return fail(`I rendered ${made.name} but could not read it back in.`)
 
@@ -940,7 +955,18 @@ export function createHostBridge(deps: BridgeDeps): HostBridge {
       const saved = await desktop.web.download(address, chosen?.title ?? '')
       if ('error' in saved) return fail(saved.error)
 
-      const imported = await deps.importPaths([saved.path])
+      const imported = await deps.importPaths(
+        [saved.path],
+        chosen
+          ? {
+              from: 'library',
+              source: chosen.source,
+              license: chosen.license,
+              author: chosen.author,
+              pageUrl: chosen.pageUrl,
+            }
+          : { from: 'local' },
+      )
       const item = imported.items[0]
       if (!item) return fail(`I downloaded ${saved.name} but could not read it back in.`)
 
@@ -993,7 +1019,7 @@ export function createHostBridge(deps: BridgeDeps): HostBridge {
 
       const reply = await desktop.exporter.run({
         ...exportPayload(state),
-        settings: { output, format, resolution: options.resolution },
+        settings: { output, format, resolution: options.resolution ?? deps.project?.resolution },
       })
 
       if (reply.canceled) return { summary: 'The export was canceled.' }
@@ -1023,7 +1049,7 @@ export function createHostBridge(deps: BridgeDeps): HostBridge {
       }
 
       const visibility = options.visibility ?? learnedDefaults(state.memory).visibility ?? 'private'
-      const short = options.short ?? looksLikeShort(state)
+      const short = options.short ?? (deps.project?.kind === 'short' || looksLikeShort(state))
 
       // YouTube decides what a Short is from the shape and length, but the tag
       // is what gets it filed as one straight away.
@@ -1059,6 +1085,37 @@ export function createHostBridge(deps: BridgeDeps): HostBridge {
         summary: account.hasCredentials
           ? 'No channel is connected yet, but Google credentials are saved. Use Connect in the assistant settings.'
           : 'YouTube is not connected. Add a Google OAuth client id and secret in the assistant settings first.',
+      }
+    },
+
+    async checkCopyright(): Promise<HostReply> {
+      const state = deps.getState()
+      if (state.clips.length === 0) return fail('There is nothing on the timeline to check yet.')
+
+      const report = runCopyrightCheck(state.clips, state.media)
+
+      if (report.findings.length === 0) {
+        return {
+          summary:
+            `${report.headline} Everything on the timeline is either yours, drawn here, or openly licensed. ` +
+            `That is not a guarantee — I cannot hear music playing in the background of something you filmed. ` +
+            `Uploading unlisted and reading the Copyright tab in YouTube Studio is the only way to know for certain.`,
+        }
+      }
+
+      // Said rather than done: the fixes are offered in the Copyright panel,
+      // where each one shows what it would change before it changes it.
+      const lines = report.findings.map((finding) => {
+        const options = finding.remedies.map((remedy) => remedy.label.toLowerCase()).join(', or ')
+        return `• ${finding.title}. ${finding.reason} You could ${options}.`
+      })
+
+      return {
+        summary:
+          `${report.headline}\n\n${lines.join('\n\n')}\n\n` +
+          `Open Copyright in the toolbar to apply any of these — it shows you exactly what it will change first. ` +
+          `Mirroring the footage or keeping cuts short will not help: Content ID normalises for that, and no ` +
+          `length of someone else's work is automatically safe.`,
       }
     },
   }

@@ -12,6 +12,15 @@ import { isToolName } from './tools'
 
 export const TRANSCRIPT_STORAGE_KEY = 'aicut.chat.v1'
 
+/**
+ * Each project gets its own conversation, so the assistant is never talking
+ * about a timeline you are no longer looking at. What it has learned about how
+ * you like things done is separate, and stays shared across all of them.
+ */
+export function transcriptKeyFor(projectId: string | null): string {
+  return projectId ? `${TRANSCRIPT_STORAGE_KEY}.${projectId}` : TRANSCRIPT_STORAGE_KEY
+}
+
 export const TRANSCRIPT_LIMIT = 200
 export const HISTORY_LIMIT = 40
 

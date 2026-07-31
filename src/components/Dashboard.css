@@ -1,0 +1,362 @@
+.dashboard {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  overflow-y: auto;
+  background:
+    radial-gradient(1100px 520px at 50% -12%, rgba(var(--accent-rgb), 0.09), transparent 70%),
+    var(--bg);
+}
+
+.dashboard-head {
+  flex: none;
+  padding: 56px 40px 28px;
+  text-align: center;
+}
+
+.dashboard-mark {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 10px;
+}
+
+.dashboard-logo {
+  font-size: 30px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  color: var(--text);
+}
+
+.dashboard-version {
+  padding: 2px 8px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--text-dim);
+  font-size: 10px;
+  letter-spacing: 0.04em;
+}
+
+.dashboard-tagline {
+  margin: 10px 0 0;
+  color: var(--text-dim);
+  font-size: 13px;
+}
+
+.dashboard-body {
+  width: min(1080px, 100%);
+  margin: 0 auto;
+  padding: 0 40px 64px;
+}
+
+.dashboard h2 {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0 0 16px;
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.recent-count {
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--text-dim);
+  font-size: 10px;
+  letter-spacing: 0;
+}
+
+/* --- Starting something --------------------------------------------------- */
+
+.new-project {
+  margin-bottom: 44px;
+}
+
+.kind-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: 12px;
+}
+
+.kind-card {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 18px 16px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg-panel);
+  text-align: left;
+  transition:
+    border-color var(--speed) var(--ease),
+    background var(--speed) var(--ease),
+    transform var(--speed) var(--ease),
+    box-shadow var(--speed) var(--ease);
+}
+
+.kind-card:hover {
+  border-color: var(--border-strong);
+  background: var(--bg-elevated);
+  transform: translateY(-2px);
+}
+
+.kind-card.is-picked {
+  border-color: rgba(var(--accent-rgb), 0.5);
+  background: rgba(var(--accent-rgb), 0.07);
+  box-shadow: var(--glow-accent);
+}
+
+/* The shape of the thing you are about to make, at a glance. */
+.kind-shape {
+  display: block;
+  border: 1.5px solid var(--text-dim);
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.04);
+  transition:
+    border-color var(--speed) var(--ease),
+    background var(--speed) var(--ease);
+}
+
+.kind-shape.is-short {
+  width: 15px;
+  height: 26px;
+}
+
+.kind-shape.is-video {
+  width: 30px;
+  height: 17px;
+}
+
+.kind-shape.is-video {
+  border-bottom-width: 4px;
+}
+
+.kind-shape.is-movie {
+  width: 34px;
+  height: 15px;
+}
+
+.kind-card.is-picked .kind-shape {
+  border-color: var(--accent);
+  background: rgba(var(--accent-rgb), 0.16);
+}
+
+.kind-label {
+  color: var(--text);
+  font-size: 14px;
+  font-weight: 550;
+}
+
+.kind-blurb {
+  color: var(--text-dim);
+  font-size: 11.5px;
+  line-height: 1.45;
+}
+
+.new-row {
+  display: flex;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.new-name {
+  flex: 1;
+  padding: 10px 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--bg-panel);
+  color: var(--text);
+  font-size: 13px;
+  font-family: inherit;
+  transition: border-color var(--speed) var(--ease);
+}
+
+.new-name:focus {
+  border-color: rgba(var(--accent-rgb), 0.5);
+  outline: none;
+}
+
+.new-name::placeholder {
+  color: var(--text-dim);
+}
+
+/* --- What you already have ------------------------------------------------ */
+
+.project-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+  gap: 14px;
+}
+
+.project-card {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg-panel);
+  overflow: hidden;
+  transition:
+    border-color var(--speed) var(--ease),
+    transform var(--speed) var(--ease),
+    box-shadow var(--speed) var(--ease);
+}
+
+.project-card:hover {
+  border-color: var(--border-strong);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-soft);
+}
+
+.project-open {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  height: 104px;
+  padding: 0 16px;
+  border: none;
+  border-bottom: 1px solid var(--border);
+  background: linear-gradient(160deg, rgba(255, 255, 255, 0.045), transparent);
+  color: inherit;
+  text-align: left;
+}
+
+.project-open:hover .kind-shape {
+  border-color: var(--accent);
+  background: rgba(var(--accent-rgb), 0.14);
+}
+
+.project-facts {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.project-kind {
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 550;
+}
+
+.project-meta {
+  color: var(--text-dim);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+}
+
+.project-foot {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 10px 12px 11px;
+}
+
+.project-name,
+.project-name-field {
+  display: block;
+  width: 100%;
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 550;
+  font-family: inherit;
+  text-align: left;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.project-name:hover {
+  color: var(--accent);
+}
+
+.project-name-field {
+  border-bottom: 1px solid rgba(var(--accent-rgb), 0.5);
+  outline: none;
+}
+
+.project-row {
+  position: relative;
+  display: flex;
+  align-items: center;
+  min-height: 20px;
+}
+
+.project-when {
+  color: var(--text-dim);
+  font-size: 11px;
+}
+
+.project-actions {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 3px;
+  margin-left: -6px;
+  background: var(--bg-panel);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--speed) var(--ease);
+}
+
+.project-card:hover .project-actions,
+.project-card:focus-within .project-actions {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.project-card:hover .project-actions,
+.project-card:focus-within .project-actions {
+  opacity: 1;
+}
+
+.card-action {
+  padding: 3px 8px;
+  border: 1px solid transparent;
+  border-radius: var(--radius-xs);
+  background: none;
+  color: var(--text-dim);
+  font-size: 11px;
+  font-family: inherit;
+  transition:
+    color var(--speed) var(--ease),
+    border-color var(--speed) var(--ease),
+    background var(--speed) var(--ease);
+}
+
+.card-action:hover {
+  color: var(--text);
+  background: rgba(255, 255, 255, 0.07);
+}
+
+.card-action.is-danger {
+  color: var(--danger);
+  border-color: rgba(255, 123, 123, 0.4);
+  background: rgba(255, 123, 123, 0.1);
+}
+
+.dashboard-empty {
+  margin: 0;
+  padding: 28px 0;
+  color: var(--text-dim);
+  font-size: 13px;
+}
+
+.dashboard-error {
+  margin: 0 0 12px;
+  padding: 10px 14px;
+  border: 1px solid rgba(255, 123, 123, 0.3);
+  border-radius: var(--radius-sm);
+  background: rgba(255, 123, 123, 0.08);
+  color: var(--danger);
+  font-size: 12px;
+}

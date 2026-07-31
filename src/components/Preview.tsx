@@ -98,6 +98,7 @@ export function Preview({
     ? [
         media.width && media.height ? `${media.width}×${media.height}` : null,
         isCropped(crop) ? 'cropped' : null,
+        clip?.muted ? 'muted' : null,
         playing ? 'Playing' : 'Paused',
       ]
         .filter(Boolean)
@@ -151,6 +152,7 @@ export function Preview({
                   className="preview-media"
                   src={media.url}
                   style={mediaStyle}
+                  muted={clip?.muted ?? false}
                   onTimeUpdate={handleTimeUpdate}
                   onEnded={onEnded}
                   onPlay={() => onPlayingChange(true)}
@@ -181,6 +183,7 @@ export function Preview({
                 key={media.url}
                 ref={mediaRef as RefObject<HTMLAudioElement>}
                 src={media.url}
+                muted={clip?.muted ?? false}
                 onTimeUpdate={handleTimeUpdate}
                 onEnded={onEnded}
                 onPlay={() => onPlayingChange(true)}

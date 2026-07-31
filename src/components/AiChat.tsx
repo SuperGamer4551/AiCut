@@ -14,13 +14,15 @@ import { converse, fallbackReply } from '../lib/agent/converse'
 import { tidyReply } from '../lib/agent/reply'
 import { learnFrom, memoryPrompt } from '../lib/agent/memory'
 import { MODEL_PRESETS, canReachModel, presetFor } from '../lib/agent/endpoints'
-import { EMPTY_TRANSCRIPT, TRANSCRIPT_STORAGE_KEY, forStorage, normalizeTranscript } from '../lib/agent/transcript'
+import { EMPTY_TRANSCRIPT, forStorage, normalizeTranscript, transcriptKeyFor } from '../lib/agent/transcript'
 import { readStored, writeStored } from '../lib/layout'
 import { linkLabel, splitLinks } from '../lib/links'
 import './AiChat.css'
 
 type Props = {
   project: ProjectState
+  /** Which saved project this conversation belongs to. */
+  projectId: string
   describeProject: () => string
   onRunTools: (calls: ToolCall[]) => Promise<ToolOutcome[]>
 }
@@ -121,8 +123,9 @@ function Linked({ text }: { text: string }) {
   )
 }
 
-export function AiChat({ project, describeProject, onRunTools }: Props) {
-  const stored = useMemo(() => readStored(TRANSCRIPT_STORAGE_KEY, normalizeTranscript), [])
+export function AiChat({ project, projectId, describeProject, onRunTools }: Props) {
+  const storageKey = transcriptKeyFor(projectId)
+  const stored = useMemo(() => readStored(storageKey, normalizeTranscript), [storageKey])
   const [messages, setMessages] = useState<ChatMessage[]>(stored.messages)
   const [draft, setDraft] = useState('')
   const [busy, setBusy] = useState(false)
@@ -161,8 +164,8 @@ export function AiChat({ project, describeProject, onRunTools }: Props) {
   // Kept on disk so closing the app does not lose the conversation.
   useEffect(() => {
     if (busy) return
-    writeStored(TRANSCRIPT_STORAGE_KEY, forStorage(messages, historyRef.current))
-  }, [messages, busy])
+    writeStored(storageKey, forStorage(messages, historyRef.current))
+  }, [messages, busy, storageKey])
 
   // Nothing to give up on until a reply has actually taken a while.
   useEffect(() => {
@@ -400,7 +403,7 @@ export function AiChat({ project, describeProject, onRunTools }: Props) {
   function clearConversation() {
     setMessages([])
     historyRef.current = []
-    writeStored(TRANSCRIPT_STORAGE_KEY, EMPTY_TRANSCRIPT)
+    writeStored(storageKey, EMPTY_TRANSCRIPT)
   }
 
   async function saveSettings() {

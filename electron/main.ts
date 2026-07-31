@@ -33,6 +33,8 @@ import type { DownloadReply, ReferenceReply, WebMediaReply, WebSearchReply } fro
 import { downloadFolder, downloadMedia, findReferenceVideos, findWebMedia, searchWeb } from './web'
 import type { FetchedVideo } from './ytdlp'
 import { fetchYoutubeVideo } from './ytdlp'
+import type { ProjectReply, ProjectsReply, SavedReply } from './projects'
+import { deleteProject, listProjects, loadProject, saveProject } from './projects'
 import type { WebMediaKind } from '../src/lib/web/sources'
 import { systemFont } from './fonts'
 import type { PublicYoutubeAccount, YoutubeAccount } from './youtube'
@@ -400,6 +402,22 @@ ipcMain.handle('web:youtube', async (_event, url: string): Promise<FetchedVideo>
 
   return fetched
 })
+
+// --- Saved projects --------------------------------------------------------
+
+ipcMain.handle('projects:list', (): Promise<ProjectsReply> => listProjects(app.getPath('userData')))
+
+ipcMain.handle('projects:load', (_event, id: string): Promise<ProjectReply> =>
+  loadProject(app.getPath('userData'), id),
+)
+
+ipcMain.handle('projects:save', (_event, project: unknown): Promise<SavedReply> =>
+  saveProject(app.getPath('userData'), project),
+)
+
+ipcMain.handle('projects:delete', (_event, id: string): Promise<SavedReply> =>
+  deleteProject(app.getPath('userData'), id),
+)
 
 /** Opens a link in the real browser; the app itself never navigates away. */
 ipcMain.handle('web:open', async (_event, url: string): Promise<boolean> => {

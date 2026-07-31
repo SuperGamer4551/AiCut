@@ -183,6 +183,12 @@ declare global {
         onProgress: (listener: (progress: FetchProgress) => void) => () => void
         open: (url: string) => Promise<boolean>
       }
+      projects: {
+        list: () => Promise<{ projects: unknown[] } | { error: string }>
+        load: (id: string) => Promise<{ project: unknown } | { error: string }>
+        save: (project: unknown) => Promise<{ ok: true } | { error: string }>
+        remove: (id: string) => Promise<{ ok: true } | { error: string }>
+      }
       updates: {
         state: () => Promise<UpdateState>
         check: () => Promise<UpdateState>

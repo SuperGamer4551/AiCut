@@ -41,6 +41,7 @@ export type ToolName =
   | 'export_project'
   | 'publish_youtube'
   | 'youtube_status'
+  | 'check_copyright'
 
 export type ToolCall = {
   /** Present when the call came from a model, used to pair up the reply. */
@@ -245,6 +246,7 @@ export type HostBridge = {
   exportProject: (options: ExportOptions) => Promise<HostReply>
   publish: (options: PublishOptions) => Promise<HostReply>
   youtubeStatus: () => Promise<HostReply>
+  checkCopyright: () => Promise<HostReply>
 }
 
 export type ChatMessage = {
