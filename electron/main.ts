@@ -33,6 +33,8 @@ import type { DownloadReply, ReferenceReply, WebMediaReply, WebSearchReply } fro
 import { downloadFolder, downloadMedia, findReferenceVideos, findWebMedia, searchWeb } from './web'
 import type { FetchedVideo } from './ytdlp'
 import { fetchYoutubeVideo } from './ytdlp'
+import type { AuthReply, SessionReply } from './auth'
+import { activeUserRoot, session as authSession, signIn, signOut, signUp } from './auth'
 import type { ProjectReply, ProjectsReply, SavedReply } from './projects'
 import { deleteProject, listProjects, loadProject, saveProject } from './projects'
 import type { WebMediaKind } from '../src/lib/web/sources'
@@ -403,21 +405,55 @@ ipcMain.handle('web:youtube', async (_event, url: string): Promise<FetchedVideo>
   return fetched
 })
 
+// --- Accounts --------------------------------------------------------------
+
+ipcMain.handle('auth:session', (): Promise<SessionReply> => authSession(app.getPath('userData')))
+
+ipcMain.handle(
+  'auth:signUp',
+  (_event, name: string, email: string, password: string): Promise<AuthReply> =>
+    signUp(app.getPath('userData'), name, email, password),
+)
+
+ipcMain.handle(
+  'auth:signIn',
+  (_event, email: string, password: string): Promise<AuthReply> =>
+    signIn(app.getPath('userData'), email, password),
+)
+
+ipcMain.handle('auth:signOut', (): Promise<{ ok: true }> => signOut(app.getPath('userData')))
+
 // --- Saved projects --------------------------------------------------------
 
-ipcMain.handle('projects:list', (): Promise<ProjectsReply> => listProjects(app.getPath('userData')))
+async function requireUserRoot(): Promise<string | { error: string }> {
+  const root = await activeUserRoot(app.getPath('userData'))
+  if (!root) return { error: 'Sign in to see your projects.' }
+  return root
+}
 
-ipcMain.handle('projects:load', (_event, id: string): Promise<ProjectReply> =>
-  loadProject(app.getPath('userData'), id),
-)
+ipcMain.handle('projects:list', async (): Promise<ProjectsReply> => {
+  const root = await requireUserRoot()
+  if (typeof root !== 'string') return root
+  return listProjects(root)
+})
 
-ipcMain.handle('projects:save', (_event, project: unknown): Promise<SavedReply> =>
-  saveProject(app.getPath('userData'), project),
-)
+ipcMain.handle('projects:load', async (_event, id: string): Promise<ProjectReply> => {
+  const root = await requireUserRoot()
+  if (typeof root !== 'string') return root
+  return loadProject(root, id)
+})
 
-ipcMain.handle('projects:delete', (_event, id: string): Promise<SavedReply> =>
-  deleteProject(app.getPath('userData'), id),
-)
+ipcMain.handle('projects:save', async (_event, project: unknown): Promise<SavedReply> => {
+  const root = await requireUserRoot()
+  if (typeof root !== 'string') return root
+  return saveProject(root, project)
+})
+
+ipcMain.handle('projects:delete', async (_event, id: string): Promise<SavedReply> => {
+  const root = await requireUserRoot()
+  if (typeof root !== 'string') return root
+  return deleteProject(root, id)
+})
 
 /** Opens a link in the real browser; the app itself never navigates away. */
 ipcMain.handle('web:open', async (_event, url: string): Promise<boolean> => {

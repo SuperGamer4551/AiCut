@@ -6,6 +6,7 @@ import { formatTime } from '../lib/types'
 import './Dashboard.css'
 
 type Props = {
+  user: { name: string; email: string } | null
   projects: ProjectSummary[]
   loading: boolean
   error: string | null
@@ -14,6 +15,7 @@ type Props = {
   onRename: (id: string, name: string) => void
   onDuplicate: (id: string) => void
   onDelete: (id: string) => void
+  onSignOut: () => void
 }
 
 /** The card that starts something, one per kind of thing worth making. */
@@ -188,6 +190,7 @@ function ProjectCard({
  * four kinds of thing worth starting.
  */
 export function Dashboard({
+  user,
   projects,
   loading,
   error,
@@ -196,12 +199,24 @@ export function Dashboard({
   onRename,
   onDuplicate,
   onDelete,
+  onSignOut,
 }: Props) {
   const recent = byRecent(projects)
 
   return (
     <div className="dashboard">
       <header className="dashboard-head">
+        {user && (
+          <div className="dashboard-account">
+            <div className="dashboard-who">
+              <span className="dashboard-who-name">{user.name}</span>
+              <span className="dashboard-who-email">{user.email}</span>
+            </div>
+            <button className="btn dashboard-signout" type="button" onClick={onSignOut}>
+              Sign out
+            </button>
+          </div>
+        )}
         <div className="dashboard-mark">
           <span className="dashboard-logo">AiCut</span>
           <span className="dashboard-version">{APP_VERSION}</span>

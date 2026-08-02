@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="AiCut — an AI video editor for your computer. Import clips, cut with an assistant, export, and publish."
+    />
+    <meta property="og:title" content="AiCut" />
+    <meta
+      property="og:description"
+      content="An AI video editor that lives on your computer. Download for Windows."
+    />
+    <meta property="og:type" content="website" />
+    <title>AiCut</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Sora:wght@400..700&family=Manrope:wght@400..700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <main class="hero">
+      <div class="hero-stage" aria-hidden="true">
+        <div class="stage-preview">
+          <div class="stage-play"></div>
+          <div class="stage-scan"></div>
+        </div>
+        <div class="stage-timeline">
+          <div class="stage-ruler"></div>
+          <div class="stage-lane is-v">
+            <span class="stage-clip" style="--x: 8%; --w: 28%"></span>
+            <span class="stage-clip is-accent" style="--x: 40%; --w: 22%"></span>
+            <span class="stage-clip" style="--x: 66%; --w: 18%"></span>
+          </div>
+          <div class="stage-lane is-a">
+            <span class="stage-clip is-audio" style="--x: 12%; --w: 48%"></span>
+          </div>
+          <div class="stage-playhead"></div>
+        </div>
+      </div>
+
+      <div class="hero-copy">
+        <p class="brand">AiCut</p>
+        <h1>Cut faster. Talk to your timeline.</h1>
+        <p class="lede">
+          A desktop AI video editor — import footage, ask for the cut, export when it feels right.
+        </p>
+        <div class="cta-row">
+          <a class="cta" id="download" href="https://github.com/SuperGamer4551/AiCut/releases/latest">
+            Download for Windows
+          </a>
+          <p class="cta-meta" id="download-meta">Free · Windows installer</p>
+        </div>
+      </div>
+    </main>
+
+    <script src="./main.js"></script>
+  </body>
+</html>

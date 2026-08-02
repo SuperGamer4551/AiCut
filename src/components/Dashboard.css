@@ -9,9 +9,65 @@
 }
 
 .dashboard-head {
+  position: relative;
   flex: none;
   padding: 56px 40px 28px;
   text-align: center;
+}
+
+.dashboard-account {
+  position: absolute;
+  top: 20px;
+  right: 28px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  text-align: right;
+}
+
+.dashboard-who {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.dashboard-who-name {
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 180px;
+}
+
+.dashboard-who-email {
+  color: var(--text-dim);
+  font-size: 11px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 180px;
+}
+
+.dashboard-signout {
+  flex: none;
+  padding: 7px 12px;
+  font-size: 12px;
+}
+
+@media (max-width: 720px) {
+  .dashboard-account {
+    position: static;
+    justify-content: center;
+    margin-bottom: 18px;
+    text-align: center;
+  }
+
+  .dashboard-who {
+    align-items: center;
+  }
 }
 
 .dashboard-mark {

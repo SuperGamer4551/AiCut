@@ -183,6 +183,19 @@ declare global {
         onProgress: (listener: (progress: FetchProgress) => void) => () => void
         open: (url: string) => Promise<boolean>
       }
+      auth: {
+        session: () => Promise<{ user: { id: string; name: string; email: string } | null }>
+        signUp: (
+          name: string,
+          email: string,
+          password: string,
+        ) => Promise<{ user: { id: string; name: string; email: string } } | { error: string }>
+        signIn: (
+          email: string,
+          password: string,
+        ) => Promise<{ user: { id: string; name: string; email: string } } | { error: string }>
+        signOut: () => Promise<{ ok: true }>
+      }
       projects: {
         list: () => Promise<{ projects: unknown[] } | { error: string }>
         load: (id: string) => Promise<{ project: unknown } | { error: string }>

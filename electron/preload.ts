@@ -230,6 +230,27 @@ const api = {
     open: (url: string): Promise<boolean> => ipcRenderer.invoke('web:open', url),
   },
 
+  auth: {
+    /** Who is signed in, or nobody. Survives closing the app. */
+    session: (): Promise<{ user: { id: string; name: string; email: string } | null }> =>
+      ipcRenderer.invoke('auth:session'),
+
+    signUp: (
+      name: string,
+      email: string,
+      password: string,
+    ): Promise<{ user: { id: string; name: string; email: string } } | { error: string }> =>
+      ipcRenderer.invoke('auth:signUp', name, email, password),
+
+    signIn: (
+      email: string,
+      password: string,
+    ): Promise<{ user: { id: string; name: string; email: string } } | { error: string }> =>
+      ipcRenderer.invoke('auth:signIn', email, password),
+
+    signOut: (): Promise<{ ok: true }> => ipcRenderer.invoke('auth:signOut'),
+  },
+
   projects: {
     /** Enough about each saved project to draw the dashboard. */
     list: (): Promise<ProjectsReply> => ipcRenderer.invoke('projects:list'),

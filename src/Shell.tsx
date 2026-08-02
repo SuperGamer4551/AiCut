@@ -1,9 +1,11 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import App from './App'
+import { AuthScreen, type AuthUser } from './components/AuthScreen'
 import { Dashboard } from './components/Dashboard'
 import type { ProjectDocument, ProjectKind, ProjectSummary } from './lib/project'
 import { copyName, createProject, newProjectId, readProject, summarize } from './lib/project'
 import { transcriptKeyFor } from './lib/agent/transcript'
+import './App.css'
 
 /** Milliseconds of quiet before an edit is written. Long enough that dragging a
  *  clip is one save rather than fifty, short enough that nothing is ever lost. */
@@ -21,6 +23,8 @@ function store(): Store | null {
  * the project rather than living for the whole run of the app.
  */
 export default function Shell() {
+  const [user, setUser] = useState<AuthUser | null>(null)
+  const [authReady, setAuthReady] = useState(false)
   const [projects, setProjects] = useState<ProjectSummary[]>([])
   const [open, setOpen] = useState<ProjectDocument | null>(null)
   const [loading, setLoading] = useState(true)
@@ -33,6 +37,20 @@ export default function Shell() {
   // Lets duplicate pick a free name without depending on the list it reads.
   const known = useRef<ProjectSummary[]>([])
   known.current = projects
+
+  useEffect(() => {
+    const auth = window.aicut?.auth
+    if (!auth) {
+      // Browser preview has no accounts; skip straight to the dashboard message.
+      setAuthReady(true)
+      return
+    }
+
+    void auth.session().then((reply) => {
+      setUser(reply.user)
+      setAuthReady(true)
+    })
+  }, [])
 
   const refresh = useCallback(async () => {
     const projects = store()
@@ -62,8 +80,14 @@ export default function Shell() {
   }, [])
 
   useEffect(() => {
+    if (!user) {
+      setProjects([])
+      setOpen(null)
+      setLoading(false)
+      return
+    }
     void refresh()
-  }, [refresh])
+  }, [user, refresh])
 
   const write = useCallback(async (project: ProjectDocument) => {
     const projects = store()
@@ -209,9 +233,27 @@ export default function Shell() {
     setProjects((current) => current.filter((entry) => entry.id !== id))
   }
 
+  async function signOut() {
+    await flush()
+    setOpen(null)
+    await window.aicut?.auth.signOut()
+    setUser(null)
+    setProjects([])
+    setError(null)
+  }
+
+  if (!authReady) {
+    return <div className="auth-screen" aria-busy="true" />
+  }
+
+  if (!user && window.aicut?.auth) {
+    return <AuthScreen onAuthed={setUser} />
+  }
+
   if (!open) {
     return (
       <Dashboard
+        user={user}
         projects={projects}
         loading={loading}
         error={error}
@@ -220,6 +262,7 @@ export default function Shell() {
         onRename={(id, name) => void rename(id, name)}
         onDuplicate={(id) => void duplicate(id)}
         onDelete={(id) => void remove(id)}
+        onSignOut={() => void signOut()}
       />
     )
   }

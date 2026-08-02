@@ -15,6 +15,16 @@ export type Release = {
 
 export const RELEASES: Release[] = [
   {
+    version: '1.1.0',
+    date: '2026-08-02',
+    title: 'Accounts, so your projects stay yours',
+    changes: [
+      'The app opens on a sign-in screen. Create an account with your name, email and a password, and your projects live under that account on this computer.',
+      'Sign out from the dashboard when someone else wants a turn. Their work will not mix with yours.',
+      'Anything you already had saved before accounts existed is kept and handed to the first account you create.',
+    ],
+  },
+  {
     version: '1.0.0',
     date: '2026-07-31',
     title: 'Your work gets kept, and you can ask what might get claimed',
