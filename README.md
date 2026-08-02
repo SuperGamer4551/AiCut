@@ -37,14 +37,11 @@ The app opens on a sign-in screen. An account is a name, an email and a password
 
 **Forgot your password?** on the sign-in screen emails a six-digit code to the address on the account. Typing the code in along with a new password sets it and signs you back in. The code lasts ten minutes, dies after five wrong guesses, and is hashed like a password rather than sat in a file in the clear.
 
-The app cannot send mail on its own — that needs a key, and a key inside an installer is a key everyone has. So the code is handed to `website/api/send-code.js`, deployed with the download site, which holds the credentials. Set either pair as environment variables on the Vercel project:
+The app cannot send mail on its own — that needs a key, and a key inside an installer is a key everyone has. So the code is handed to `website/api/send-code.js`, deployed with the download site, which holds the key. Set `RESEND_API_KEY` on the Vercel project and the endpoint works; [Resend](https://resend.com) sends 3,000 a month free.
 
-| Variables | Reaches | Notes |
-| --- | --- | --- |
-| `SMTP_USER`, `SMTP_PASS` | anyone | A Gmail address and an [app password](https://myaccount.google.com/apppasswords). 500 a day. |
-| `RESEND_API_KEY`, `MAIL_FROM` | your own address only, until a domain is verified with [Resend](https://resend.com) | 3,000 a month free. |
+Until a domain is verified there, Resend only delivers to the address that owns the account, which covers resetting your own password but not anyone else's. Verifying a domain lifts that, and `MAIL_FROM` then sets the sender in place of the shared `onboarding@resend.dev`.
 
-With neither set the endpoint says so plainly and the app repeats it, rather than claiming a code is on its way. `AICUT_MAIL_ENDPOINT` points a build at a different sender.
+With no key set the endpoint says so plainly and the app repeats it, rather than claiming a code is on its way. `AICUT_MAIL_ENDPOINT` points a build at a different sender.
 
 ## The look
 

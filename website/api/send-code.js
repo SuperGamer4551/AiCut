@@ -5,13 +5,11 @@
 // endpoint stays deliberately dull: one fixed message, to one address, with
 // six digits in it.
 //
-// Two ways to send, whichever is configured:
-//   RESEND_API_KEY + MAIL_FROM   — needs a domain verified with Resend before
-//                                  it will write to anyone but your own address
-//   SMTP_USER + SMTP_PASS        — a Gmail app password, which reaches anyone
-import nodemailer from 'nodemailer'
-
+// Set RESEND_API_KEY on the Vercel project. MAIL_FROM is only needed once a
+// domain is verified with Resend — until then the shared sender below works,
+// and Resend will only deliver to the address that owns the account.
 const RESEND_ENDPOINT = 'https://api.resend.com/emails'
+const DEFAULT_FROM = 'AiCut <onboarding@resend.dev>'
 
 const WINDOW_MS = 15 * 60 * 1000
 const MAX_PER_WINDOW = 4
@@ -65,61 +63,14 @@ function message(name, code) {
   return { subject: `${code} is your AiCut reset code`, text, html }
 }
 
-async function sendWithResend(to, mail) {
-  const sent = await fetch(RESEND_ENDPOINT, {
-    method: 'POST',
-    headers: {
-      authorization: `Bearer ${process.env.RESEND_API_KEY}`,
-      'content-type': 'application/json',
-    },
-    body: JSON.stringify({ from: process.env.MAIL_FROM, to: [to], ...mail }),
-  })
-
-  if (sent.ok) return { ok: true }
-
-  const detail = await sent.text().catch(() => '')
-  console.error('resend refused', sent.status, detail)
-
-  // The commonest failure by far is sending to anyone but yourself before a
-  // domain is verified, and the raw message does not make that obvious.
-  if (sent.status === 403 && /verify a domain|own email/i.test(detail)) {
-    return {
-      error:
-        'Resend will only email the address that owns the account until a domain is verified.',
-    }
-  }
-
-  return { error: 'The email service refused to send that code.' }
-}
-
-async function sendWithSmtp(to, mail) {
-  const user = process.env.SMTP_USER
-  const transport = nodemailer.createTransport({
-    host: process.env.SMTP_HOST || 'smtp.gmail.com',
-    port: Number(process.env.SMTP_PORT || 465),
-    secure: String(process.env.SMTP_PORT || '465') === '465',
-    auth: { user, pass: process.env.SMTP_PASS },
-  })
-
-  try {
-    await transport.sendMail({ from: process.env.MAIL_FROM || `AiCut <${user}>`, to, ...mail })
-    return { ok: true }
-  } catch (error) {
-    console.error('smtp failed', error)
-    return { error: 'The email could not be sent. Try again in a moment.' }
-  }
-}
-
 export default async function handler(request, response) {
   if (request.method !== 'POST') {
     response.setHeader('Allow', 'POST')
     return response.status(405).json({ error: 'Send a POST request.' })
   }
 
-  const viaResend = Boolean(process.env.RESEND_API_KEY && process.env.MAIL_FROM)
-  const viaSmtp = Boolean(process.env.SMTP_USER && process.env.SMTP_PASS)
-
-  if (!viaResend && !viaSmtp) {
+  const key = (process.env.RESEND_API_KEY ?? '').trim()
+  if (!key) {
     return response.status(503).json({
       error: 'Email is not set up on the AiCut site yet, so no code can be sent.',
     })
@@ -138,11 +89,40 @@ export default async function handler(request, response) {
     return response.status(429).json({ error: 'Too many codes requested. Wait a few minutes.' })
   }
 
-  const mail = message(name, code)
-  const result = viaResend ? await sendWithResend(email, mail) : await sendWithSmtp(email, mail)
+  try {
+    const sent = await fetch(RESEND_ENDPOINT, {
+      method: 'POST',
+      headers: { authorization: `Bearer ${key}`, 'content-type': 'application/json' },
+      body: JSON.stringify({
+        from: (process.env.MAIL_FROM ?? '').trim() || DEFAULT_FROM,
+        to: [email],
+        ...message(name, code),
+      }),
+    })
 
-  if ('error' in result) return response.status(502).json({ error: result.error })
-  return response.status(200).json({ sent: true })
+    if (sent.ok) return response.status(200).json({ sent: true })
+
+    const detail = await sent.text().catch(() => '')
+    console.error('resend refused', sent.status, detail)
+
+    // Sending anywhere but your own address before verifying a domain is the
+    // commonest failure, and Resend's own wording does not make that obvious.
+    if (sent.status === 403 || /verify a domain|own email/i.test(detail)) {
+      return response.status(502).json({
+        error:
+          'Resend will only email the address that owns the account until a domain is verified.',
+      })
+    }
+
+    if (sent.status === 401) {
+      return response.status(502).json({ error: 'The Resend API key was rejected.' })
+    }
+
+    return response.status(502).json({ error: 'The email service refused to send that code.' })
+  } catch (error) {
+    console.error('resend error', error)
+    return response.status(502).json({ error: 'The email could not be sent. Try again in a moment.' })
+  }
 }
 
 function safeParse(raw) {
