@@ -29,6 +29,23 @@ npm run build    # type-check and build the renderer and Electron bundles
 npm run check    # every assertion suite (see below)
 ```
 
+## Accounts
+
+The app opens on a sign-in screen. An account is a name, an email and a password, and everything about it stays on this computer: the password is hashed with scrypt before it is written, and projects are kept per account under the app's own data folder, so two people sharing a machine never see each other's work. Whatever was saved before accounts existed is handed to the first account made rather than stranded.
+
+### Forgetting a password
+
+**Forgot your password?** on the sign-in screen emails a six-digit code to the address on the account. Typing the code in along with a new password sets it and signs you back in. The code lasts ten minutes, dies after five wrong guesses, and is hashed like a password rather than sat in a file in the clear.
+
+The app cannot send mail on its own — that needs a key, and a key inside an installer is a key everyone has. So the code is handed to `website/api/send-code.js`, deployed with the download site, which holds the credentials. Set either pair as environment variables on the Vercel project:
+
+| Variables | Reaches | Notes |
+| --- | --- | --- |
+| `SMTP_USER`, `SMTP_PASS` | anyone | A Gmail address and an [app password](https://myaccount.google.com/apppasswords). 500 a day. |
+| `RESEND_API_KEY`, `MAIL_FROM` | your own address only, until a domain is verified with [Resend](https://resend.com) | 3,000 a month free. |
+
+With neither set the endpoint says so plainly and the app repeats it, rather than claiming a code is on its way. `AICUT_MAIL_ENDPOINT` points a build at a different sender.
+
 ## The look
 
 Two typefaces do the work: **Sora** for headings, labels and every number, **Manrope** for reading text. Digits are set with tabular figures, so a timecode ticking up never shifts the layout — numbers belong to the interface rather than looking like terminal output. Panels are glass over a lit backdrop, clips have a lit top edge and a soft drop, and one easing curve and duration (`--ease`, `--speed` in `src/index.css`) drive every hover, drag and pop-in. Everything stills for `prefers-reduced-motion`.

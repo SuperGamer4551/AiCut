@@ -6,6 +6,16 @@ import { mkdir, readFile, rename, rm, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 import { projectsFolder } from './projects'
 
+/** A code that has been emailed out and is waiting to be typed back in. */
+export type ResetRequest = {
+  salt: string
+  hash: string
+  /** Epoch milliseconds after which the code is refused. */
+  expires: number
+  /** Wrong guesses so far, so a six-digit code cannot be worked through. */
+  attempts: number
+}
+
 export type AccountRecord = {
   id: string
   name: string
@@ -15,6 +25,7 @@ export type AccountRecord = {
   /** scrypt hash of the password, hex. */
   hash: string
   created: number
+  reset?: ResetRequest
 }
 
 export type PublicAccount = {
@@ -25,6 +36,14 @@ export type PublicAccount = {
 
 export type AuthReply = { user: PublicAccount } | { error: string }
 export type SessionReply = { user: PublicAccount | null }
+export type SentReply = { sent: true; email: string } | { error: string }
+
+/** Hands the code to whatever can actually deliver an email. */
+export type SendCode = (to: {
+  email: string
+  name: string
+  code: string
+}) => Promise<{ ok: true } | { error: string }>
 
 type Store = {
   accounts: AccountRecord[]
@@ -35,6 +54,10 @@ const SESSION_FILE = 'session.json'
 const USERS_DIR = 'users'
 
 const SCRYPT_KEYLEN = 64
+
+/** Long enough to go and find the email, short enough to be worth expiring. */
+export const RESET_TTL_MS = 10 * 60 * 1000
+export const RESET_MAX_ATTEMPTS = 5
 
 function accountsPath(userData: string): string {
   return path.join(userData, ACCOUNTS_FILE)
@@ -228,6 +251,111 @@ export async function signIn(
 export async function signOut(userData: string): Promise<{ ok: true }> {
   await writeSession(userData, null)
   return { ok: true }
+}
+
+// --- Forgotten passwords ---------------------------------------------------
+
+/** Six digits, drawn from the same source as the salts rather than Math.random. */
+export function makeResetCode(bytes: (size: number) => Buffer = randomBytes): string {
+  // Rejection sampling, so 000000–999999 are all equally likely.
+  for (;;) {
+    const value = bytes(4).readUInt32BE(0)
+    const limit = 4_294_967_296 - (4_294_967_296 % 1_000_000)
+    if (value < limit) return String(value % 1_000_000).padStart(6, '0')
+  }
+}
+
+/**
+ * Emails a code to the address on an account. Whether the address is known is
+ * not hidden: the accounts file sits on this computer next to the person
+ * reading it, so pretending otherwise would only waste their time.
+ */
+export async function requestPasswordReset(
+  userData: string,
+  email: string,
+  send: SendCode,
+  now: number = Date.now(),
+): Promise<SentReply> {
+  const cleanedEmail = cleanEmail(email)
+  if (!looksLikeEmail(cleanedEmail)) return { error: 'That does not look like an email address.' }
+
+  const store = await readStore(userData)
+  const account = store.accounts.find((entry) => entry.email === cleanedEmail)
+  if (!account) return { error: 'There is no account with that email on this computer.' }
+
+  const code = makeResetCode()
+  const delivered = await send({ email: account.email, name: account.name, code })
+  // The code is only recorded once it is genuinely on its way, so a failed
+  // send does not invalidate a code the person is still holding.
+  if ('error' in delivered) return { error: delivered.error }
+
+  const salt = randomBytes(16).toString('hex')
+  account.reset = {
+    salt,
+    hash: hashPassword(code, salt),
+    expires: now + RESET_TTL_MS,
+    attempts: 0,
+  }
+
+  await writeStore(userData, store)
+  return { sent: true, email: account.email }
+}
+
+/**
+ * Takes the code and the new password together. Getting it right signs them
+ * back in, since they have just proved the address is theirs.
+ */
+export async function resetPassword(
+  userData: string,
+  email: string,
+  code: string,
+  password: string,
+  now: number = Date.now(),
+): Promise<AuthReply> {
+  const cleanedEmail = cleanEmail(email)
+  const cleanedCode = code.replace(/\D/g, '')
+
+  const store = await readStore(userData)
+  const account = store.accounts.find((entry) => entry.email === cleanedEmail)
+  if (!account?.reset) {
+    return { error: 'Ask for a new code — there is nothing waiting for this account.' }
+  }
+
+  if (account.reset.expires < now) {
+    delete account.reset
+    await writeStore(userData, store)
+    return { error: 'That code has expired. Ask for a new one.' }
+  }
+
+  if (account.reset.attempts >= RESET_MAX_ATTEMPTS) {
+    delete account.reset
+    await writeStore(userData, store)
+    return { error: 'Too many wrong codes. Ask for a new one.' }
+  }
+
+  if (!passwordsMatch(cleanedCode, account.reset.salt, account.reset.hash)) {
+    account.reset.attempts += 1
+    const left = RESET_MAX_ATTEMPTS - account.reset.attempts
+    await writeStore(userData, store)
+    return {
+      error: left > 0 ? `That code is wrong. ${left} ${left === 1 ? 'try' : 'tries'} left.` : 'That code is wrong. Ask for a new one.',
+    }
+  }
+
+  // The password is only checked once the code is known to be good, so a
+  // short password does not burn one of the tries.
+  if (password.length < 8) return { error: 'Use at least 8 characters for the password.' }
+
+  const salt = randomBytes(16).toString('hex')
+  account.salt = salt
+  account.hash = hashPassword(password, salt)
+  delete account.reset
+
+  await writeStore(userData, store)
+  await mkdir(projectsFolder(userRoot(userData, account.id)), { recursive: true })
+  await writeSession(userData, account.id)
+
+  return { user: publicAccount(account) }
 }
 
 /** Root folder for the signed-in user's projects, or null when nobody is in. */

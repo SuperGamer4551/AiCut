@@ -125,6 +125,26 @@
   color: var(--text-muted);
 }
 
+.auth-step {
+  margin-bottom: 22px;
+  text-align: center;
+}
+
+.auth-step-title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 18px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+
+.auth-step-blurb {
+  margin: 8px 0 0;
+  color: var(--text-dim);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
 .auth-form {
   display: flex;
   flex-direction: column;
@@ -165,14 +185,70 @@
   box-shadow: 0 0 0 3px rgba(var(--accent-rgb), 0.12);
 }
 
-.auth-error {
+.auth-field input[readonly] {
+  color: var(--text-muted);
+  background: rgba(0, 0, 0, 0.15);
+}
+
+/* Six digits read as digits, spaced out so they are easy to check. */
+.auth-code {
+  font-family: var(--font-num);
+  font-size: 22px !important;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.32em !important;
+  text-align: center;
+}
+
+.auth-error,
+.auth-notice {
   margin: 0;
   padding: 10px 12px;
-  border: 1px solid rgba(255, 123, 123, 0.35);
   border-radius: var(--radius-xs);
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.auth-error {
+  border: 1px solid rgba(255, 123, 123, 0.35);
   background: rgba(255, 123, 123, 0.08);
   color: var(--danger);
+}
+
+.auth-notice {
+  border: 1px solid rgba(var(--accent-rgb), 0.35);
+  background: rgba(var(--accent-rgb), 0.08);
+  color: var(--accent);
+}
+
+.auth-links {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 6px 18px;
+  margin-top: 18px;
+}
+
+.auth-link {
+  padding: 2px 0;
+  border: 0;
+  background: none;
+  color: var(--text-muted);
+  font: inherit;
   font-size: 13px;
+  text-decoration: underline;
+  text-decoration-color: rgba(255, 255, 255, 0.2);
+  text-underline-offset: 3px;
+  cursor: pointer;
+  transition: color var(--speed) var(--ease);
+}
+
+.auth-link:hover:not(:disabled) {
+  color: var(--text);
+}
+
+.auth-link:disabled {
+  opacity: 0.5;
+  cursor: default;
 }
 
 .auth-submit {
@@ -188,7 +264,7 @@
 }
 
 .auth-note {
-  margin: 18px 0 0;
+  margin: 14px 0 0;
   color: var(--text-dim);
   font-size: 12px;
   line-height: 1.45;

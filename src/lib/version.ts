@@ -15,6 +15,16 @@ export type Release = {
 
 export const RELEASES: Release[] = [
   {
+    version: '1.2.0',
+    date: '2026-08-02',
+    title: 'A forgotten password is no longer the end of an account',
+    changes: [
+      'There is a "Forgot your password?" link on the sign-in screen. It emails a six-digit code to the address on your account, and typing that code in lets you set a new password.',
+      'The code lasts ten minutes and stops working after five wrong guesses, so nobody gets to sit and work through six digits.',
+      'Getting it right signs you straight back in, and your projects are exactly where you left them.',
+    ],
+  },
+  {
     version: '1.1.0',
     date: '2026-08-02',
     title: 'Accounts, so your projects stay yours',

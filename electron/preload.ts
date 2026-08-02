@@ -249,6 +249,18 @@ const api = {
       ipcRenderer.invoke('auth:signIn', email, password),
 
     signOut: (): Promise<{ ok: true }> => ipcRenderer.invoke('auth:signOut'),
+
+    /** Emails a six-digit code to the address on the account. */
+    requestReset: (email: string): Promise<{ sent: true; email: string } | { error: string }> =>
+      ipcRenderer.invoke('auth:requestReset', email),
+
+    /** The code and the new password together; a good code signs them in. */
+    resetPassword: (
+      email: string,
+      code: string,
+      password: string,
+    ): Promise<{ user: { id: string; name: string; email: string } } | { error: string }> =>
+      ipcRenderer.invoke('auth:resetPassword', email, code, password),
   },
 
   projects: {

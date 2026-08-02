@@ -33,8 +33,17 @@ import type { DownloadReply, ReferenceReply, WebMediaReply, WebSearchReply } fro
 import { downloadFolder, downloadMedia, findReferenceVideos, findWebMedia, searchWeb } from './web'
 import type { FetchedVideo } from './ytdlp'
 import { fetchYoutubeVideo } from './ytdlp'
-import type { AuthReply, SessionReply } from './auth'
-import { activeUserRoot, session as authSession, signIn, signOut, signUp } from './auth'
+import type { AuthReply, SentReply, SessionReply } from './auth'
+import {
+  activeUserRoot,
+  session as authSession,
+  requestPasswordReset,
+  resetPassword,
+  signIn,
+  signOut,
+  signUp,
+} from './auth'
+import { deliverResetCode } from './mailer'
 import type { ProjectReply, ProjectsReply, SavedReply } from './projects'
 import { deleteProject, listProjects, loadProject, saveProject } from './projects'
 import type { WebMediaKind } from '../src/lib/web/sources'
@@ -422,6 +431,16 @@ ipcMain.handle(
 )
 
 ipcMain.handle('auth:signOut', (): Promise<{ ok: true }> => signOut(app.getPath('userData')))
+
+ipcMain.handle('auth:requestReset', (_event, email: string): Promise<SentReply> =>
+  requestPasswordReset(app.getPath('userData'), email, deliverResetCode),
+)
+
+ipcMain.handle(
+  'auth:resetPassword',
+  (_event, email: string, code: string, password: string): Promise<AuthReply> =>
+    resetPassword(app.getPath('userData'), email, code, password),
+)
 
 // --- Saved projects --------------------------------------------------------
 

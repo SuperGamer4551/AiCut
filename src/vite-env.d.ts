@@ -195,6 +195,12 @@ declare global {
           password: string,
         ) => Promise<{ user: { id: string; name: string; email: string } } | { error: string }>
         signOut: () => Promise<{ ok: true }>
+        requestReset: (email: string) => Promise<{ sent: true; email: string } | { error: string }>
+        resetPassword: (
+          email: string,
+          code: string,
+          password: string,
+        ) => Promise<{ user: { id: string; name: string; email: string } } | { error: string }>
       }
       projects: {
         list: () => Promise<{ projects: unknown[] } | { error: string }>
