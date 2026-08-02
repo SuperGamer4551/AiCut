@@ -195,6 +195,7 @@ declare global {
           password: string,
         ) => Promise<{ user: { id: string; name: string; email: string } } | { error: string }>
         signOut: () => Promise<{ ok: true }>
+        deleteAccount: () => Promise<{ ok: true } | { error: string }>
         requestReset: (email: string) => Promise<{ sent: true; email: string } | { error: string }>
         resetPassword: (
           email: string,

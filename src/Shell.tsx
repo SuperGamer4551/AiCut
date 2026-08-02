@@ -242,6 +242,40 @@ export default function Shell() {
     setError(null)
   }
 
+  async function deleteAccount() {
+    const auth = window.aicut?.auth
+    if (!auth) return
+
+    // An edit still waiting to be written belongs to an account that is about
+    // to stop existing, so it is dropped rather than saved.
+    if (timer.current !== null) {
+      window.clearTimeout(timer.current)
+      timer.current = null
+    }
+    pending.current = null
+
+    const reply = await auth.deleteAccount()
+    if ('error' in reply) {
+      setError(reply.error)
+      return
+    }
+
+    // Conversations live in the page's own storage rather than the project
+    // file, so they have to be cleared out by hand.
+    for (const project of known.current) {
+      try {
+        window.localStorage.removeItem(transcriptKeyFor(project.id))
+      } catch {
+        // A browser with storage turned off has nothing to clean up.
+      }
+    }
+
+    setOpen(null)
+    setUser(null)
+    setProjects([])
+    setError(null)
+  }
+
   if (!authReady) {
     return <div className="auth-screen" aria-busy="true" />
   }
@@ -263,6 +297,7 @@ export default function Shell() {
         onDuplicate={(id) => void duplicate(id)}
         onDelete={(id) => void remove(id)}
         onSignOut={() => void signOut()}
+        onDeleteAccount={() => void deleteAccount()}
       />
     )
   }

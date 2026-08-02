@@ -3,6 +3,7 @@ import type { ProjectKind, ProjectSummary } from '../lib/project'
 import { KIND_PRESETS, PROJECT_KINDS, byRecent, cleanProjectName, whenText } from '../lib/project'
 import { APP_VERSION } from '../lib/version'
 import { formatTime } from '../lib/types'
+import { UpdateButton } from './UpdateButton'
 import './Dashboard.css'
 
 type Props = {
@@ -16,6 +17,118 @@ type Props = {
   onDuplicate: (id: string) => void
   onDelete: (id: string) => void
   onSignOut: () => void
+  onDeleteAccount: () => void
+}
+
+/**
+ * The name in the corner, and what can be done to the account behind it.
+ * Deleting takes everything with it, so it asks once before it happens.
+ */
+function AccountMenu({
+  user,
+  onSignOut,
+  onDeleteAccount,
+}: {
+  user: { name: string; email: string }
+  onSignOut: () => void
+  onDeleteAccount: () => void
+}) {
+  const [open, setOpen] = useState(false)
+  const [confirming, setConfirming] = useState(false)
+  const ref = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (!open) return
+
+    function onDown(event: PointerEvent) {
+      if (!ref.current?.contains(event.target as Node)) setOpen(false)
+    }
+    function onKey(event: KeyboardEvent) {
+      if (event.key === 'Escape') setOpen(false)
+    }
+
+    window.addEventListener('pointerdown', onDown)
+    window.addEventListener('keydown', onKey)
+    return () => {
+      window.removeEventListener('pointerdown', onDown)
+      window.removeEventListener('keydown', onKey)
+    }
+  }, [open])
+
+  // Closing the menu puts the question away with it, and an offer left sitting
+  // for a few seconds is not one you still mean.
+  useEffect(() => {
+    if (!open) setConfirming(false)
+  }, [open])
+
+  useEffect(() => {
+    if (!confirming) return
+    const id = window.setTimeout(() => setConfirming(false), 5000)
+    return () => window.clearTimeout(id)
+  }, [confirming])
+
+  return (
+    <div className="dashboard-account" ref={ref}>
+      <button
+        className={`account-button${open ? ' is-open' : ''}`}
+        type="button"
+        aria-haspopup="menu"
+        aria-expanded={open}
+        onClick={() => setOpen((current) => !current)}
+      >
+        <span className="account-avatar" aria-hidden="true">
+          {user.name.slice(0, 1).toUpperCase()}
+        </span>
+        <span className="dashboard-who">
+          <span className="dashboard-who-name">{user.name}</span>
+          <span className="dashboard-who-email">{user.email}</span>
+        </span>
+      </button>
+
+      {open && (
+        <div className="account-menu" role="menu">
+          <button
+            className="account-item"
+            type="button"
+            role="menuitem"
+            onClick={() => {
+              setOpen(false)
+              onSignOut()
+            }}
+          >
+            Sign out
+          </button>
+
+          <button
+            className={`account-item is-danger${confirming ? ' is-confirming' : ''}`}
+            type="button"
+            role="menuitem"
+            title={
+              confirming
+                ? 'This removes your account and every project in it'
+                : 'Delete this account and everything saved under it'
+            }
+            onClick={() => {
+              if (!confirming) {
+                setConfirming(true)
+                return
+              }
+              setOpen(false)
+              onDeleteAccount()
+            }}
+          >
+            {confirming ? 'Sure?' : 'Delete account'}
+          </button>
+
+          {confirming && (
+            <p className="account-warning">
+              Your projects go with it, and there is no undo.
+            </p>
+          )}
+        </div>
+      )}
+    </div>
+  )
 }
 
 /** The card that starts something, one per kind of thing worth making. */
@@ -200,23 +313,21 @@ export function Dashboard({
   onDuplicate,
   onDelete,
   onSignOut,
+  onDeleteAccount,
 }: Props) {
   const recent = byRecent(projects)
 
   return (
     <div className="dashboard">
       <header className="dashboard-head">
+        <div className="dashboard-updates">
+          <UpdateButton />
+        </div>
+
         {user && (
-          <div className="dashboard-account">
-            <div className="dashboard-who">
-              <span className="dashboard-who-name">{user.name}</span>
-              <span className="dashboard-who-email">{user.email}</span>
-            </div>
-            <button className="btn dashboard-signout" type="button" onClick={onSignOut}>
-              Sign out
-            </button>
-          </div>
+          <AccountMenu user={user} onSignOut={onSignOut} onDeleteAccount={onDeleteAccount} />
         )}
+
         <div className="dashboard-mark">
           <span className="dashboard-logo">AiCut</span>
           <span className="dashboard-version">{APP_VERSION}</span>

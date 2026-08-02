@@ -253,6 +253,33 @@ export async function signOut(userData: string): Promise<{ ok: true }> {
   return { ok: true }
 }
 
+/**
+ * Removes the signed-in account and everything saved under it. There is no
+ * undo and nothing is kept back: the record goes, the projects folder goes,
+ * and the session with it.
+ */
+export async function deleteAccount(userData: string): Promise<{ ok: true } | { error: string }> {
+  const current = await session(userData)
+  if (!current.user) return { error: 'Nobody is signed in.' }
+
+  const store = await readStore(userData)
+  const remaining = store.accounts.filter((entry) => entry.id !== current.user!.id)
+  if (remaining.length === store.accounts.length) {
+    return { error: 'That account no longer exists.' }
+  }
+
+  try {
+    await writeStore(userData, { accounts: remaining })
+    // The folder is only worth removing once the record is gone, so a failure
+    // here leaves orphaned files rather than an account nobody can sign into.
+    await rm(userRoot(userData, current.user.id), { recursive: true, force: true })
+    await writeSession(userData, null)
+    return { ok: true }
+  } catch (error) {
+    return { error: `The account could not be deleted: ${(error as Error).message}` }
+  }
+}
+
 // --- Forgotten passwords ---------------------------------------------------
 
 /** Six digits, drawn from the same source as the salts rather than Math.random. */

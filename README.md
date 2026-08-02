@@ -33,6 +33,8 @@ npm run check    # every assertion suite (see below)
 
 The app opens on a sign-in screen. An account is a name, an email and a password, and everything about it stays on this computer: the password is hashed with scrypt before it is written, and projects are kept per account under the app's own data folder, so two people sharing a machine never see each other's work. Whatever was saved before accounts existed is handed to the first account made rather than stranded.
 
+The name in the corner of the dashboard opens a menu holding **Sign out** and **Delete account**. Deleting asks once, then takes the account, its projects and their conversations with it — other accounts on the same computer are untouched.
+
 ### Forgetting a password
 
 **Forgot your password?** on the sign-in screen emails a six-digit code to the address on the account. Typing the code in along with a new password sets it and signs you back in. The code lasts ten minutes, dies after five wrong guesses, and is hashed like a password rather than sat in a file in the clear.

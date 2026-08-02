@@ -1,11 +1,13 @@
 // Assertions for local accounts: hashing, sign-up, sign-in, session and the
 // per-user project folder. Run with: npm run check:auth
 import { mkdtemp, mkdir, writeFile, readdir } from 'node:fs/promises'
+import { existsSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
 import {
   RESET_MAX_ATTEMPTS,
   RESET_TTL_MS,
+  deleteAccount,
   makeResetCode,
   requestPasswordReset,
   resetPassword,
@@ -150,6 +152,41 @@ async function main() {
   }
   const burned = await resetPassword(home, 'rey@example.com', live, 'guessed-password-1')
   check('too many wrong guesses burns the code', 'error' in burned, true)
+
+  // --- Deleting an account -------------------------------------------------
+
+  const shared = await mkdtemp(path.join(tmpdir(), 'aicut-delete-'))
+  const keeper = await signUp(shared, 'Keeper', 'keeper@example.com', 'password123')
+  await signOut(shared)
+  const goer = await signUp(shared, 'Goer', 'goer@example.com', 'password123')
+
+  check('deleting needs somebody signed in', 'user' in goer, true)
+
+  if ('user' in goer) {
+    const folder = userRoot(shared, goer.user.id)
+    await writeFile(path.join(projectsFolder(folder), 'p1abcdef.aicut.json'), '{"id":"p1abcdef"}', 'utf8')
+
+    const gone = await deleteAccount(shared)
+    check('the account is deleted', 'ok' in gone, true)
+    check('deleting signs you out', (await session(shared)).user, null)
+    check('their projects are gone from disk', existsSync(folder), false)
+    check(
+      'the deleted account cannot sign back in',
+      'error' in (await signIn(shared, 'goer@example.com', 'password123')),
+      true,
+    )
+  }
+
+  check('nobody signed in cannot delete', 'error' in (await deleteAccount(shared)), true)
+
+  if ('user' in keeper) {
+    check(
+      'the other account is untouched',
+      'user' in (await signIn(shared, 'keeper@example.com', 'password123')),
+      true,
+    )
+    check('their projects survive', existsSync(userRoot(shared, keeper.user.id)), true)
+  }
 
   if (failures > 0) {
     console.error(`\n${failures} auth check(s) failed`)

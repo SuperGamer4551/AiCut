@@ -250,6 +250,10 @@ const api = {
 
     signOut: (): Promise<{ ok: true }> => ipcRenderer.invoke('auth:signOut'),
 
+    /** Removes the signed-in account and every project saved under it. */
+    deleteAccount: (): Promise<{ ok: true } | { error: string }> =>
+      ipcRenderer.invoke('auth:deleteAccount'),
+
     /** Emails a six-digit code to the address on the account. */
     requestReset: (email: string): Promise<{ sent: true; email: string } | { error: string }> =>
       ipcRenderer.invoke('auth:requestReset', email),

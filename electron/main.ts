@@ -37,6 +37,7 @@ import type { AuthReply, SentReply, SessionReply } from './auth'
 import {
   activeUserRoot,
   session as authSession,
+  deleteAccount,
   requestPasswordReset,
   resetPassword,
   signIn,
@@ -431,6 +432,10 @@ ipcMain.handle(
 )
 
 ipcMain.handle('auth:signOut', (): Promise<{ ok: true }> => signOut(app.getPath('userData')))
+
+ipcMain.handle('auth:deleteAccount', (): Promise<{ ok: true } | { error: string }> =>
+  deleteAccount(app.getPath('userData')),
+)
 
 ipcMain.handle('auth:requestReset', (_event, email: string): Promise<SentReply> =>
   requestPasswordReset(app.getPath('userData'), email, deliverResetCode),

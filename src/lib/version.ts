@@ -15,6 +15,16 @@ export type Release = {
 
 export const RELEASES: Release[] = [
   {
+    version: '1.3.0',
+    date: '2026-08-02',
+    title: 'Leaving is as easy as arriving, and updates are on the dashboard',
+    changes: [
+      'Your name in the corner of the dashboard is now a menu. Signing out lives there, and so does deleting your account.',
+      'Deleting asks "Sure?" before it does anything, then removes the account, every project in it and the conversations that went with them. There is no undo, and it says so.',
+      'Check for updates is on the dashboard as well as in the editor. Waiting for a new version was never a good reason to have to open a project first.',
+    ],
+  },
+  {
     version: '1.2.0',
     date: '2026-08-02',
     title: 'A forgotten password is no longer the end of an account',
