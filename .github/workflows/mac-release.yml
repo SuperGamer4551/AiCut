@@ -1,0 +1,52 @@
+# The mac build, which cannot be made anywhere but on a mac.
+#
+# Windows releases are packaged and published from the maintainer's own machine.
+# There is no mac here, so publishing a release starts this instead: it builds
+# the Apple silicon and Intel disk images on a GitHub mac runner and uploads
+# them into the release that already holds the Windows installer.
+#
+# It can also be started by hand, which is what to do when a release went out
+# before this workflow existed, or when a mac build failed on its own.
+name: Mac release
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  mac:
+    runs-on: macos-14
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      # electron-builder uploads to the release matching package.json, so a tag
+      # that says otherwise means the version bump was never pushed and the
+      # build would quietly land in the wrong place.
+      - name: Check the tag matches package.json
+        if: github.event_name == 'release'
+        run: |
+          want="v$(node -p "require('./package.json').version")"
+          got="${{ github.event.release.tag_name }}"
+          if [ "$want" != "$got" ]; then
+            echo "package.json is $want but the release is $got. Push the version bump, then run this workflow by hand." >&2
+            exit 1
+          fi
+
+      - run: npm ci
+
+      - run: npm run release:mac
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # There is no certificate to find, and looking for one turns a missing
+          # signature into a failed build.
+          CSC_IDENTITY_AUTO_DISCOVERY: 'false'

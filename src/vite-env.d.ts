@@ -93,7 +93,16 @@ type GeneratedClip = {
 }
 
 type UpdateState = {
-  status: 'idle' | 'unsupported' | 'checking' | 'current' | 'available' | 'downloading' | 'ready' | 'error'
+  status:
+    | 'idle'
+    | 'unsupported'
+    | 'manual'
+    | 'checking'
+    | 'current'
+    | 'available'
+    | 'downloading'
+    | 'ready'
+    | 'error'
   version?: string
   percent?: number
   message?: string

@@ -12,6 +12,14 @@ npm run dist
 
 That writes `release/AiCut Setup <version>.exe`. Installing puts AiCut in the Start menu and on the Desktop with its own name and icon, so it pins to the taskbar like any other program and reopens as AiCut. Nothing else needs to be running: ffmpeg ships inside it, and there is no terminal window to keep open.
 
+### On a Mac
+
+Every release carries two disk images, `AiCut-<version>-arm64.dmg` for Apple silicon and `AiCut-<version>-x64.dmg` for Intel. The download page picks the right one; drag AiCut into Applications as usual.
+
+macOS stops the first launch, because the app is not from the App Store: right-click AiCut in Applications and choose **Open**, and it will not ask again. The bundle is signed ad-hoc rather than with an Apple developer certificate, which is enough for macOS to load it but not enough to skip that prompt, and not enough for the app to update itself — Squirrel only accepts an update signed by the same certificate as the copy running. So **Check for updates** on a Mac opens the releases page instead of checking.
+
+Mac builds cannot be made on Windows, so `.github/workflows/mac-release.yml` makes them on a GitHub mac runner and uploads them into the release publishing a Windows build already created. Push the version bump before publishing, or the workflow stops and says the tag and `package.json` disagree. With a Mac to hand, `npm run release:mac` does the same thing locally: it fetches both ffmpeg binaries with `npm run ffmpeg:mac`, packs each architecture, and `scripts/after-pack.cjs` carries ffmpeg into the bundle and signs it.
+
 ### Running it from the source instead
 
 **Double-click `AiCut.cmd`** in this folder. It installs anything missing the first time, then starts the app. Keep the small black window open while you edit — closing it closes the editor. This is the development mode: handy while changing the code, but it is Node running the app rather than the app itself, so do not pin it.

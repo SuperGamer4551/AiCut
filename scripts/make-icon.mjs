@@ -164,8 +164,10 @@ const icoSizes = [16, 24, 32, 48, 64, 128, 256]
 const entries = icoSizes.map((size) => ({ size, png: encodePng(size, render(size)) }))
 
 writeFileSync(path.join(out, 'icon.ico'), encodeIco(entries))
-writeFileSync(path.join(out, 'icon.png'), encodePng(512, render(512)))
+// 1024 is what a Mac icon is built from: macOS wants the largest slot at twice
+// 512 for retina, and everything below it is scaled down from this one.
+writeFileSync(path.join(out, 'icon.png'), encodePng(1024, render(1024)))
 
 console.log(`icon.ico  ${icoSizes.join(', ')}px`)
-console.log('icon.png  512px')
+console.log('icon.png  1024px')
 console.log(`written to ${out}`)

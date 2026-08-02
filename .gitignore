@@ -4,6 +4,7 @@ dist-electron
 *.tsbuildinfo
 release
 update-site
+build/ffmpeg
 .DS_Store
 *.log
 .env

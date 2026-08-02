@@ -14,6 +14,8 @@ import { autoUpdater } from 'electron-updater'
 export type UpdateStatus =
   | 'idle'
   | 'unsupported'
+  /** Updates exist, but this build has to be replaced by hand. */
+  | 'manual'
   | 'checking'
   | 'current'
   | 'available'
@@ -34,6 +36,20 @@ export type UpdateState = {
 const FIRST_CHECK_MS = 10_000
 
 const EVERY_MS = 6 * 60 * 60 * 1000
+
+/**
+ * The mac build cannot swap itself out. macOS only accepts an update signed by
+ * the same Apple developer certificate as the copy running, and this project
+ * has no certificate — the disk image is signed ad-hoc. Checking anyway fails
+ * with a sentence about code signatures, which tells the user nothing they can
+ * act on, so the mac build points at the download page instead.
+ */
+const NO_SELF_UPDATE = process.platform === 'darwin'
+
+const MANUAL: UpdateState = {
+  status: 'manual',
+  message: 'New versions for Mac are downloaded from the AiCut releases page.',
+}
 
 let state: UpdateState = { status: 'idle' }
 let target: BrowserWindow | null = null
@@ -79,6 +95,11 @@ export async function checkForUpdates(): Promise<UpdateState> {
     return state
   }
 
+  if (NO_SELF_UPDATE) {
+    announce(MANUAL)
+    return state
+  }
+
   try {
     await autoUpdater.checkForUpdates()
   } catch (error) {
@@ -93,6 +114,11 @@ export function startUpdates(win: BrowserWindow): void {
 
   if (!app.isPackaged) {
     state = { status: 'unsupported', message: 'Running from source. Only the installed app updates itself.' }
+    return
+  }
+
+  if (NO_SELF_UPDATE) {
+    state = MANUAL
     return
   }
 

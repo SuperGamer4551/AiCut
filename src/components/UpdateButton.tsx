@@ -3,6 +3,9 @@ import type { UpdateState } from '../lib/update'
 import { updateAction, updateBusy } from '../lib/update'
 import './UpdateButton.css'
 
+/** Where a build that cannot update itself sends people for the new one. */
+const RELEASES = 'https://github.com/SuperGamer4551/AiCut/releases/latest'
+
 /**
  * Asks the updater for a new version, and offers the restart once one is
  * downloaded. It lives in the status bar while a project is open and on the
@@ -54,6 +57,19 @@ export function UpdateButton() {
   }
 
   if (!updatable) return null
+
+  if (update.status === 'manual') {
+    return (
+      <button
+        className="update-note"
+        type="button"
+        onClick={() => void window.aicut?.web.open(RELEASES)}
+        title={update.message ?? 'Open the releases page'}
+      >
+        {updateAction(update, asked)}
+      </button>
+    )
+  }
 
   return (
     <button

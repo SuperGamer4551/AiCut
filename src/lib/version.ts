@@ -15,6 +15,17 @@ export type Release = {
 
 export const RELEASES: Release[] = [
   {
+    version: '1.4.0',
+    date: '2026-08-02',
+    title: 'AiCut runs on a Mac',
+    changes: [
+      'There is a Mac build. The download page hands you the right one for the computer you are on — Apple silicon or Intel — and Windows still gets the installer it always did.',
+      'ffmpeg travels inside the Mac app the same way it does on Windows, so exporting works the moment it opens with nothing else to install.',
+      'macOS asks once, on the first launch, because the app is not from the App Store. Right-click AiCut in Applications and choose Open, and it will not ask again.',
+      'A Mac cannot swap itself out for a new version, so Check for updates there opens the releases page instead of pretending to check.',
+    ],
+  },
+  {
     version: '1.3.0',
     date: '2026-08-02',
     title: 'Leaving is as easy as arriving, and updates are on the dashboard',

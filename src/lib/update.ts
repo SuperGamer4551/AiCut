@@ -7,6 +7,8 @@ export type UpdateStatus =
   | 'idle'
   /** Running from source, where there is nothing to update. */
   | 'unsupported'
+  /** A build that cannot replace itself, so the new one is downloaded by hand. */
+  | 'manual'
   | 'checking'
   | 'current'
   | 'available'
@@ -54,6 +56,10 @@ export function updateBusy(update: UpdateState): boolean {
 export function updateAction(update: UpdateState, asked: boolean): string {
   const working = updateLabel(update)
   if (working) return working
+
+  // A build that cannot update itself should say so before it is asked, since
+  // pressing the button opens a page rather than checking anything.
+  if (update.status === 'manual') return 'Get the newest version'
 
   if (!asked) return 'Check for updates'
 
